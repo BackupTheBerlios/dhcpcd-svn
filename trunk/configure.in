@@ -38,15 +38,6 @@ case $host_os in
 		;;
 esac
 
-case $host_cpu in
-	i486)	CFLAGS="$CFLAGS -march=i486"
-		;;
-	i586)	CFLAGS="$CFLAGS -march=i586"
-		;;
-	i686)	CFLAGS="$CFLAGS -march=i686"
-		;;
-esac
-
 LDFLAGS="-s -O2"
 
 dnl

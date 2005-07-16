@@ -35,6 +35,7 @@ extern char		*ProgramName;
 extern char		*IfNameExt;
 extern char		*ConfigDir;
 extern int		DebugFlag;
+extern int              Persistent;
 extern jmp_buf		env;
 extern void		*(*currState)();
 /*****************************************************************************/
@@ -54,7 +55,6 @@ int sig;
       unlink(pidfile);
 ntrn: if ( sig == SIGALRM ) return;
       fprintf(stderr,"****  %s: not running\n",ProgramName);
-      exit(1);
     }
   exit(0);
 }
@@ -122,7 +122,8 @@ int sig;
 	}
 	syslog(LOG_ERR,"terminating on signal %d\n",sig);
     }
-  dhcpStop();
+  if (!Persistent || sig != SIGTERM)
+    dhcpStop();
   deletePidFile();
   exit(sig);
 }

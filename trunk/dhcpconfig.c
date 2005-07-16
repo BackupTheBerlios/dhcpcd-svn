@@ -67,6 +67,7 @@ char	hostinfo_file[128];
 int	resolv_renamed=0; 
 int	yp_renamed=0;
 int	ntp_renamed=0;  
+int     have_info=0; /* set once we have written the hostinfo file */
 
 /* Note: Legths initialised to negative to allow us to distinguish between "empty" and "not set" */
 char InitialHostName[HOSTNAME_MAX_LEN];
@@ -84,10 +85,14 @@ char *cstr;		/* replace single quotes with space */
   while ( *c++ );
   return cstr;
 }
+
 /*****************************************************************************/
 void execute_on_change(prm)
 char *prm;
 {
+  if (!have_info)
+    return;
+  
 #ifdef EMBED
   if ( vfork() == 0 )
 #else
@@ -365,7 +370,9 @@ int dhcpConfig()
 	      fprintf(f,"\n");
 	    }
 #else
-	  if ( DhcpOptions.len[domainName] )
+	   if ( DhcpOptions.len[dnsSearchPath] )
+	    fprintf(f,"search %s\n", (char *)DhcpOptions.val[dnsSearchPath]);
+	  else if ( DhcpOptions.len[domainName] )
 	    fprintf(f,"search %s\n",(char *)DhcpOptions.val[domainName]);
 #endif
 	  fclose(f);
@@ -649,6 +656,8 @@ for (i=4;i<DhcpOptions.len[dns];i+=4)
   ((unsigned char *)DhcpOptions.val[dns])[1+i],
   ((unsigned char *)DhcpOptions.val[dns])[2+i],
   ((unsigned char *)DhcpOptions.val[dns])[3+i]);
+if ( DhcpOptions.len[dnsSearchPath] )
+  fprintf(f, "\nDNSSEARCH=\'%s\'", cleanmetas((char *)DhcpOptions.val[dnsSearchPath]));
 if ( DhcpOptions.len[ntpServers]>=4 )
   {
     fprintf(f,"\nNTPSERVERS=%u.%u.%u.%u",
@@ -726,6 +735,7 @@ DhcpIface.class_id);
 DhcpIface.client_id[3],DhcpIface.client_id[4],DhcpIface.client_id[5],
 DhcpIface.client_id[6],DhcpIface.client_id[7],DhcpIface.client_id[8]);
       fclose(f);
+      have_info = 1;
     }
   else
     syslog(LOG_ERR,"dhcpConfig: fopen: %m\n");

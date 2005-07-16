@@ -26,10 +26,10 @@
 #include <paths.h>
 #include "dhcpcd.h"
 
-#define PID_FILE_PATH		"%s/"PROGRAM_NAME"-%s.pid"
+#define PID_FILE_PATH		"%.0s/var/run/"PROGRAM_NAME"-%s.pid"
 #define DHCP_CACHE_FILE		"%s/"PROGRAM_NAME"-%s.cache"
 #define DHCP_HOSTINFO		"%s/"PROGRAM_NAME"-%s.info"
-#define EXEC_ON_CHANGE		"%s/"PROGRAM_NAME".exe"
+#define EXEC_ON_CHANGE		"%.0s/etc/dhcpc/"PROGRAM_NAME".exe"
 
 #ifdef EMBED
 #define CONFIG_DIR		"/etc/config/dhcpc"
@@ -37,7 +37,7 @@
 #define NIS_CONF		"/etc/config/yp.conf"
 #define NTP_CONF		"/etc/config/ntp.conf"
 #else
-#define CONFIG_DIR		"/etc/dhcpc"
+#define CONFIG_DIR		"/var/lib/dhcpc"
 #define RESOLV_CONF		"/etc/resolv.conf"
 #define NIS_CONF		"/etc/yp.conf"
 #define NTP_CONF		"/etc/ntp.conf"

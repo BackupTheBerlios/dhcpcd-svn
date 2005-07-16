@@ -9,7 +9,7 @@ dhcpcd \- DHCP client daemon
 .in +.5i
 .ti -.5i
 dhcpcd
-\%[\-dknrBCDHNRSTY]
+\%[\-dknprBCDHNRSTY]
 \%[\-t\ <timeout>]
 \%[\-c\ <ExecFilePath>]
 \%[-h\ <hostname>]
@@ -71,7 +71,7 @@ Sends
 .B SIGHUP
 signal to the
 .B dhcpcd
-process that is currently running. If
+process associated with the specified interface if one is currently running. If
 .B dhcpcd
 receives
 .B SIGHUP
@@ -91,7 +91,9 @@ and will not destroy cache. When system boots
 .B dhcpcd
 will use cache to request the same IP address
 from DHCP server which was assigned before the
-system went down.
+system went down. (see also
+.B -p
+)
 .TP
 .BI \-n
 Sends
@@ -105,6 +107,18 @@ to try to renew the lease. If dhcpcd is not running, the flag
 is ignored and
 .B dhcpcd
 follows the normal startup procedure.
+.TP
+.BI \-p
+Stops
+.B dhcpcd
+from bring down an interface when it is terminated with 
+.B SIGTERM
+This is useful when a host is running with an NFS-mounted root
+filesystem over an interface controlled by DHCP. It should not be used
+except in those circumstances, since if 
+.B dhcp
+is stopped it can no longer down an interface at the end of its
+lease period when the lease is not renewed.
 .TP
 .BI \-r
 Makes dhcpcd RFC1541 (obsolete) compliant.
@@ -206,7 +220,9 @@ In a case
 .B dhcpcd
 times out before receiving a valid IP address from DHCP server
 .B dhcpcd
-will return exit code 1 to the parent process.
+will return exit code 1 to the parent process. Setting the timeout to
+zero disables it: dhcp will keep trying forever to get a lease, and if
+the lease is lost, it will try forever to get another.
 .TP
 .BI \-c \ <ExecFilePath>
 .B dhcpcd

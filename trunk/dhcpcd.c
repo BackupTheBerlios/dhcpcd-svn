@@ -35,6 +35,7 @@
 #include "pathnames.h"
 #include "client.h"
 #include "signals.h"
+#include "udpipgen.h"
 
 struct in_addr  inform_ipaddr,default_router;
 char		*ProgramName	=	NULL;
@@ -70,6 +71,7 @@ int		SendSecondDiscover	=	0;
 int		Window		=	0;
 char		*ConfigDir	=	CONFIG_DIR;
 int		SetDHCPDefaultRoutes=	1;
+int             Persistent      =       0;
 #if 0
 unsigned char	ClientMACaddr[ETH_ALEN];
 int		ClientMACaddr_ind =	0;
@@ -133,6 +135,10 @@ prgs: switch ( argc[i][s] )
 	    i++;
 	    s=1;
 	    break;
+	  case 'p':
+	    s++;
+	    Persistent = 1;
+	    goto prgs;
 	  case 'k':
 	    s++;
 	    killFlag=SIGHUP;
@@ -265,7 +271,7 @@ prgs: switch ( argc[i][s] )
 	    else
 	      goto usage;
 	    s=1;
-	    if ( TimeOut > 0 ) break;
+	    if ( TimeOut >= 0 ) break;
 	    goto usage;
 	  case 'w':
 	    if ( argc[i][s+1] ) goto usage;
@@ -325,7 +331,7 @@ prgs: switch ( argc[i][s] )
           default:
 usage:	    print_version();
 	    fprintf(stderr,
-"Usage: dhcpcd [-dknrBCDHNRSTY] [-l leasetime] [-h hostname] [-t timeout]\n\
+"Usage: dhcpcd [-dknprBCDHNRSTY] [-l leasetime] [-h hostname] [-t timeout]\n\
        [-i vendorClassID] [-I ClientID] [-c filename] [-s [ipaddr]]\n\
        [-w windowsize] [-L ConfigDir] [-G [gateway]] [interface]\n");
 	    exit(1);
@@ -365,9 +371,10 @@ usage:	    print_version();
       exit(1);
     }
   magic_cookie = htonl(MAGIC_COOKIE);
-  dhcpMsgSize = htons(sizeof(dhcpMessage));
+  dhcpMsgSize = htons(sizeof(dhcpMessage)+sizeof(udpiphdr));
   nleaseTime = htonl(LeaseTime);
-  alarm(TimeOut);
+  if (TimeOut != 0)
+    alarm(TimeOut);
   do
     if ( (currState=(void *(*)())currState()) == NULL ) exit(1);
   while ( currState != &dhcpBound );

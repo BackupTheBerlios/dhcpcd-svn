@@ -92,7 +92,7 @@ unsigned xid;
   memcpy(p,&nleaseTime,4);
   p += 4;
   *p++ = dhcpParamRequest;
-  *p++ = 14;
+  *p++ = 15;
   *p++ = subnetMask;
   *p++ = routersOnSubnet;
   *p++ = dns;
@@ -107,6 +107,7 @@ unsigned xid;
   *p++ = nisDomainName;
   *p++ = nisServers;
   *p++ = ntpServers;
+  *p++ = dnsSearchPath;
   if ( HostName )
     {
       *p++ = hostName;
@@ -179,7 +180,7 @@ unsigned xid;
       p += 4;
     }
   *p++ = dhcpParamRequest;
-  *p++ = 14;
+  *p++ = 15;
   *p++ = subnetMask;
   *p++ = routersOnSubnet;
   *p++ = dns;
@@ -194,6 +195,7 @@ unsigned xid;
   *p++ = nisDomainName;
   *p++ = nisServers;
   *p++ = ntpServers;
+  *p++ = dnsSearchPath;
   if ( HostName )
     {
       *p++ = hostName;
@@ -254,7 +256,7 @@ unsigned xid;
     }
 #endif
   *p++ = dhcpParamRequest;
-  *p++ = 14;
+  *p++ = 15;
   *p++ = subnetMask;
   *p++ = routersOnSubnet;
   *p++ = dns;
@@ -269,6 +271,7 @@ unsigned xid;
   *p++ = nisDomainName;
   *p++ = nisServers;
   *p++ = ntpServers;
+  *p++ = dnsSearchPath;
   if ( HostName )
     {
       *p++ = hostName;
@@ -327,7 +330,7 @@ unsigned xid;
       p += 4;
     }
   *p++ = dhcpParamRequest;
-  *p++ = 14;
+  *p++ = 15;
   *p++ = subnetMask;
   *p++ = routersOnSubnet;
   *p++ = dns;
@@ -342,6 +345,7 @@ unsigned xid;
   *p++ = nisDomainName;
   *p++ = nisServers;
   *p++ = ntpServers;
+  *p++ = dnsSearchPath;
   if ( HostName )
     {
       *p++ = hostName;
@@ -408,7 +412,7 @@ unsigned xid;
   memcpy(p,&nleaseTime,4);
   p += 4;
   *p++ = dhcpParamRequest;
-  *p++ = 14;
+  *p++ = 15;
   *p++ = subnetMask;
   *p++ = routersOnSubnet;
   *p++ = dns;
@@ -423,6 +427,7 @@ unsigned xid;
   *p++ = nisDomainName;
   *p++ = nisServers;
   *p++ = ntpServers;
+  *p++ = dnsSearchPath;
   if ( HostName )
     {
       *p++ = hostName;
@@ -556,7 +561,7 @@ unsigned xid;
   memcpy(p,&dhcpMsgSize,2);
   p += 2;
   *p++ = dhcpParamRequest;
-  *p++ = 14;
+  *p++ = 15;
   *p++ = subnetMask;
   *p++ = routersOnSubnet;
   *p++ = dns;
@@ -571,6 +576,7 @@ unsigned xid;
   *p++ = nisDomainName;
   *p++ = nisServers;
   *p++ = ntpServers;
+  *p++ = dnsSearchPath;
   if ( HostName )
     {
       *p++ = hostName;

@@ -106,6 +106,70 @@ const dhcpMessage *DhcpMsgSend = (dhcpMessage *)&UdpIpMsgSend.udpipmsg[sizeof(ud
 static short int saved_if_flags = 0;
 int	TokenRingIf	=	0;
 /*****************************************************************************/
+/* Decode an RFC3397 DNS search order option into a space
+   seperated string. Returns length of string (including 
+   terminating zero) or zero on error. out may be NULL
+   to just determine output length. */
+
+static unsigned int decodeSearch(u_char *p, int len, u_char *out)
+{
+  u_char *r, *q = p;
+  unsigned int count = 0, l, hops;
+
+  while (q - p < len)
+    {
+      r = NULL;
+      hops = 0;
+      while ((l = *q++))
+	{
+	  unsigned int label_type = l & 0xc0;
+	  if (label_type == 0x80 || label_type == 0x40)
+	    return 0;
+	  else if (label_type == 0xc0) /* pointer */
+	    { 
+	      l = (l&0x3f) << 8;
+	      l |= *q++;
+	      
+	      /* save source of first jump. */
+	      if (!r)
+		r = q;
+
+	      hops++;
+	      if (hops > 255)
+		return 0;
+	      q = p + l;
+	      if (q - p >= len)
+		return 0;
+	    }
+	  else 
+	    {
+	      /* straightforward name segment, add with '.' */
+	      count += l+1;
+	      if (out)
+		{
+		  memcpy(out, q, l);
+		  out += l;
+		  *out++ = '.';
+		}
+	      q += l;
+	    }
+	}
+
+      /* change last dot to space */
+      if (out)
+	*(out-1) = ' ';
+
+      if (r)
+	q = r;
+    }
+
+  /* change last space to zero terminator */
+  if (out)
+    *(out-1) = 0;
+
+  return count;  
+}
+
 int parseDhcpMsgRecv() /* this routine parses dhcp message received */
 {
 #ifdef DEBUG
@@ -124,10 +188,32 @@ int parseDhcpMsgRecv() /* this routine parses dhcp message received */
     switch ( *p )
       {
         case endOption: goto swend;
-       	case padOption: p++; break;
+        case padOption: p++; break;
+        case dnsSearchPath:
+	  {
+	    unsigned int len;
+	    
+	    if (p + 2 + p[1] >= end)
+	      goto swend; /* corrupt packet */
+
+	    if (len = decodeSearch(p+2, p[1], NULL))
+	      {
+		if ( DhcpOptions.val[*p] )
+		  free(DhcpOptions.val[*p]);
+		DhcpOptions.val[*p] = malloc(len);
+		DhcpOptions.len[*p] = len;
+		decodeSearch(p+2, p[1], DhcpOptions.val[*p]);
+	      }
+	    p += p[1]+2;
+	    break;
+	  }
+
        	default:
 	  if ( p[1] )
 	    {
+	      if (p + 2 + p[1] >= end)
+	      goto swend; /* corrupt packet */
+	      
 	      if ( DhcpOptions.len[*p] == p[1] )
 	        memcpy(DhcpOptions.val[*p],p+2,p[1]);
 	      else
@@ -866,7 +952,8 @@ void *dhcpReboot()
     {
       if ( DebugFlag )
 	syslog(LOG_DEBUG,"timed out waiting for DHCP_ACK response\n");
-      alarm(TimeOut);
+      if (TimeOut != 0)
+	alarm(TimeOut);
       return &dhcpInit;
     }
   dhcpStart();

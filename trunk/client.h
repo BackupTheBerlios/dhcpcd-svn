@@ -131,6 +131,7 @@ enum
   dhcpT2value				=	59,
   dhcpClassIdentifier			=	60,
   dhcpClientIdentifier			=	61,
+  dnsSearchPath                         =       119, /* RFC 3397 */
   endOption				=	255
 };
 
