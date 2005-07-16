@@ -73,11 +73,21 @@ extern	int		TestCase;
 extern	int		resolv_renamed,yp_renamed,ntp_renamed;
 extern	int		InitialHostName_len,InitialDomainName_len;
 extern	char		*InitialHostName,*InitialDomainName;
+extern	int		DownIfaceOnStop;
+
+extern	char		resolv_file[128];
+extern	char		resolv_file_sv[128];
+extern	char		ntp_file[128];
+extern	char		ntp_file_sv[128];
+extern	char		nis_file[128];
+extern	char		nis_file_sv[128];
 
 #if 0
 extern	unsigned char	ClientMACaddr[ETH_ALEN];
 extern	int		ClientMACaddr_ind;
 #endif
+
+extern	int		SetFQDNHostName;
 
 #ifdef ARPCHECK
 int arpCheck();
@@ -271,6 +281,14 @@ swend:
 	  case 53:/* dhcpMessageType */
 	    fprintf(stderr,"i=%-2d  len=%-2d  option = %u\n",
 		i,DhcpOptions.len[i],*(unsigned char *)DhcpOptions.val[i]);
+	    break;
+	  case 81:/* dhcpFQDNHostName */
+	    fprintf(stderr,"i=%-2d  len=%-2d  flags = %02X  rcode1 = %02X  rcode2 = %02X  name = \"%s\"\n",
+		i,DhcpOptions.len[i],
+		((unsigned char *)DhcpOptions.val[i])[0],
+		((unsigned char *)DhcpOptions.val[i])[1],
+		((unsigned char *)DhcpOptions.val[i])[2],
+		((char *)DhcpOptions.val[i])+3);
 	    break;
 	  default:
 	    fprintf(stderr,"i=%-2d  len=%-2d  option = \"%s\"\n",
@@ -477,6 +495,21 @@ UdpIpMsgRecv.ethhdr.ether_shost[5]);
       DhcpOptions.num++;
       if ( DebugFlag )
 	syslog(LOG_DEBUG,"dhcpT2value is missing in DHCP server response. Assuming %u sec\n",t2);
+    }
+  if ( DhcpOptions.val[dhcpFQDNHostName] )
+    {
+      syslog(LOG_DEBUG,"dhcpFQDNHostName response flags = %02X  rcode1 = %02X  rcode2 = %02X  name = \"%s\"\n",
+	((unsigned char *)DhcpOptions.val[dhcpFQDNHostName])[0],
+	((unsigned char *)DhcpOptions.val[dhcpFQDNHostName])[1],
+	((unsigned char *)DhcpOptions.val[dhcpFQDNHostName])[2],
+	((char *)DhcpOptions.val[dhcpFQDNHostName])+3);
+    }
+  else
+    {
+      if ( DebugFlag && (SetFQDNHostName != FQDNdisable) )
+        {
+	  syslog(LOG_DEBUG,"dhcpFQDNHostName is missing in DHCP server response.\n");
+	}
     }
   if ( DhcpOptions.val[dhcpMessageType] )
     return *(unsigned char *)DhcpOptions.val[dhcpMessageType];
@@ -1223,17 +1256,20 @@ void *dhcpStop()
   if ( ioctl(dhcpSocket,SIOCSIFADDR,&ifr) == -1 )
     syslog(LOG_ERR,"dhcpStop: ioctl SIOCSIFADDR: %m\n");
 #endif
-  ifr.ifr_flags = saved_if_flags & ~IFF_UP;
-  if ( (IfName_len==IfNameExt_len) && ioctl(dhcpSocket,SIOCSIFFLAGS,&ifr) )
-    syslog(LOG_ERR,"dhcpStop: ioctl SIOCSIFFLAGS: %m\n");
+  if (DownIfaceOnStop)
+    {
+      ifr.ifr_flags = saved_if_flags & ~IFF_UP;
+      if ( (IfName_len==IfNameExt_len) && ioctl(dhcpSocket,SIOCSIFFLAGS,&ifr) )
+        syslog(LOG_ERR,"dhcpStop: ioctl SIOCSIFFLAGS: %m\n");
+    }
 tsc:
   close(dhcpSocket);
   if ( resolv_renamed )
-    rename(""RESOLV_CONF".sv",RESOLV_CONF);
+    rename(resolv_file_sv, resolv_file);
   if ( yp_renamed )
-    rename(""NIS_CONF".sv",NIS_CONF);
+    rename(nis_file_sv, nis_file);
   if ( ntp_renamed )
-    rename(""NTP_CONF".sv",NTP_CONF);
+    rename(ntp_file_sv, ntp_file);
   execute_on_change("down");
   return &dhcpStart;
 }

@@ -43,6 +43,8 @@ extern  unsigned        nleaseTime;
 extern  int             BroadcastResp;
 extern  struct in_addr  inform_ipaddr;
 
+extern	int		SetFQDNHostName;
+
 /*****************************************************************************/
 void buildDhcpDiscover(xid)
 unsigned xid;
@@ -108,7 +110,8 @@ unsigned xid;
   *p++ = nisServers;
   *p++ = ntpServers;
   *p++ = dnsSearchPath;
-  if ( HostName )
+  /* FQDN option (81) replaces HostName option (12) if requested */
+  if (( HostName ) && ( SetFQDNHostName == FQDNdisable ))
     {
       *p++ = hostName;
       *p++ = HostName_len;
@@ -121,6 +124,23 @@ unsigned xid;
   p += DhcpIface.class_len;
   memcpy(p,DhcpIface.client_id,DhcpIface.client_len);
   p += DhcpIface.client_len;
+  if (( HostName ) && ( SetFQDNHostName != FQDNdisable ))
+    {
+      /* Draft IETF DHC-FQDN option (81) */
+      *p++ = dhcpFQDNHostName;
+      *p++ = HostName_len + 3;
+      /* Flags: 0000NEOS
+       * S: 1 => Client requests Server to update A RR in DNS as well as PTR
+       * O: 1 => Server indicates to client that DNS has been updated regardless
+       * E: 1 => Name data is DNS format, i.e. <4>host<6>domain<4>com<0> not "host.domain.com"
+       * N: 1 => Client requests Server to not update DNS
+       */
+      *p++ = SetFQDNHostName & 0x9;
+      *p++ = 0; /* rcode1, response from DNS server to DHCP for PTR RR */
+      *p++ = 0; /* rcode2, response from DNS server to DHCP for A RR if S=1 */
+      memcpy(p,HostName,HostName_len);
+      p += HostName_len;
+    }
   *p = endOption;
 
 /* build UDP/IP header */
@@ -196,7 +216,8 @@ unsigned xid;
   *p++ = nisServers;
   *p++ = ntpServers;
   *p++ = dnsSearchPath;
-  if ( HostName )
+  /* FQDN option (81) replaces HostName option (12) if requested */
+  if (( HostName ) && ( SetFQDNHostName == FQDNdisable ))
     {
       *p++ = hostName;
       *p++ = HostName_len;
@@ -209,6 +230,23 @@ unsigned xid;
   p += DhcpIface.class_len;
   memcpy(p,DhcpIface.client_id,DhcpIface.client_len);
   p += DhcpIface.client_len;
+  if (( HostName ) && ( SetFQDNHostName != FQDNdisable ))
+    {
+      /* Draft IETF DHC-FQDN option (81) */
+      *p++ = dhcpFQDNHostName;
+      *p++ = HostName_len + 3;
+      /* Flags: 0000NEOS
+       * S: 1 => Client requests Server to update A RR in DNS as well as PTR
+       * O: 1 => Server indicates to client that DNS has been updated regardless
+       * E: 1 => Name data is DNS format, i.e. <4>host<6>domain<4>com<0> not "host.domain.com"
+       * N: 1 => Client requests Server to not update DNS
+       */
+      *p++ = SetFQDNHostName & 0x9;
+      *p++ = 0; /* rcode1, response from DNS server to DHCP for PTR RR */
+      *p++ = 0; /* rcode2, response from DNS server to DHCP for A RR if S=1 */
+      memcpy(p,HostName,HostName_len);
+      p += HostName_len;
+    }
   *p = endOption;
 
 /* build UDP/IP header */
@@ -272,7 +310,8 @@ unsigned xid;
   *p++ = nisServers;
   *p++ = ntpServers;
   *p++ = dnsSearchPath;
-  if ( HostName )
+  /* FQDN option (81) replaces HostName option (12) if requested */
+  if (( HostName ) && ( SetFQDNHostName == FQDNdisable ))
     {
       *p++ = hostName;
       *p++ = HostName_len;
@@ -285,6 +324,23 @@ unsigned xid;
   p += DhcpIface.class_len;
   memcpy(p,DhcpIface.client_id,DhcpIface.client_len);
   p += DhcpIface.client_len;
+  if (( HostName ) && ( SetFQDNHostName != FQDNdisable ))
+    {
+      /* Draft IETF DHC-FQDN option (81) */
+      *p++ = dhcpFQDNHostName;
+      *p++ = HostName_len + 3;
+      /* Flags: 0000NEOS
+       * S: 1 => Client requests Server to update A RR in DNS as well as PTR
+       * O: 1 => Server indicates to client that DNS has been updated regardless
+       * E: 1 => Name data is DNS format, i.e. <4>host<6>domain<4>com<0> not "host.domain.com"
+       * N: 1 => Client requests Server to not update DNS
+       */
+      *p++ = SetFQDNHostName & 0x9;
+      *p++ = 0; /* rcode1, response from DNS server to DHCP for PTR RR */
+      *p++ = 0; /* rcode2, response from DNS server to DHCP for A RR if S=1 */
+      memcpy(p,HostName,HostName_len);
+      p += HostName_len;
+    }
   *p = endOption;
 
   udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,
@@ -346,7 +402,8 @@ unsigned xid;
   *p++ = nisServers;
   *p++ = ntpServers;
   *p++ = dnsSearchPath;
-  if ( HostName )
+  /* FQDN option (81) replaces HostName option (12) if requested */
+  if (( HostName ) && ( SetFQDNHostName == FQDNdisable ))
     {
       *p++ = hostName;
       *p++ = HostName_len;
@@ -359,6 +416,23 @@ unsigned xid;
   p += DhcpIface.class_len;
   memcpy(p,DhcpIface.client_id,DhcpIface.client_len);
   p += DhcpIface.client_len;
+  if (( HostName ) && ( SetFQDNHostName != FQDNdisable ))
+    {
+      /* Draft IETF DHC-FQDN option (81) */
+      *p++ = dhcpFQDNHostName;
+      *p++ = HostName_len + 3;
+      /* Flags: 0000NEOS
+       * S: 1 => Client requests Server to update A RR in DNS as well as PTR
+       * O: 1 => Server indicates to client that DNS has been updated regardless
+       * E: 1 => Name data is DNS format, i.e. <4>host<6>domain<4>com<0> not "host.domain.com"
+       * N: 1 => Client requests Server to not update DNS
+       */
+      *p++ = SetFQDNHostName & 0x9;
+      *p++ = 0; /* rcode1, response from DNS server to DHCP for PTR RR */
+      *p++ = 0; /* rcode2, response from DNS server to DHCP for A RR if S=1 */
+      memcpy(p,HostName,HostName_len);
+      p += HostName_len;
+    }
   *p = endOption;
 
   udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,
@@ -428,7 +502,8 @@ unsigned xid;
   *p++ = nisServers;
   *p++ = ntpServers;
   *p++ = dnsSearchPath;
-  if ( HostName )
+  /* FQDN option (81) replaces HostName option (12) if requested */
+  if (( HostName ) && ( SetFQDNHostName == FQDNdisable ))
     {
       *p++ = hostName;
       *p++ = HostName_len;
@@ -441,6 +516,23 @@ unsigned xid;
   p += DhcpIface.class_len;
   memcpy(p,DhcpIface.client_id,DhcpIface.client_len);
   p += DhcpIface.client_len;
+  if (( HostName ) && ( SetFQDNHostName != FQDNdisable ))
+    {
+      /* Draft IETF DHC-FQDN option (81) */
+      *p++ = dhcpFQDNHostName;
+      *p++ = HostName_len + 3;
+      /* Flags: 0000NEOS
+       * S: 1 => Client requests Server to update A RR in DNS as well as PTR
+       * O: 1 => Server indicates to client that DNS has been updated regardless
+       * E: 1 => Name data is DNS format, i.e. <4>host<6>domain<4>com<0> not "host.domain.com"
+       * N: 1 => Client requests Server to not update DNS
+       */
+      *p++ = SetFQDNHostName & 0x9;
+      *p++ = 0; /* rcode1, response from DNS server to DHCP for PTR RR */
+      *p++ = 0; /* rcode2, response from DNS server to DHCP for A RR if S=1 */
+      memcpy(p,HostName,HostName_len);
+      p += HostName_len;
+    }
   *p = endOption;
 
   udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,0,INADDR_BROADCAST,
@@ -577,7 +669,8 @@ unsigned xid;
   *p++ = nisServers;
   *p++ = ntpServers;
   *p++ = dnsSearchPath;
-  if ( HostName )
+  /* FQDN option (81) replaces HostName option (12) if requested */
+  if (( HostName ) && ( SetFQDNHostName == FQDNdisable ))
     {
       *p++ = hostName;
       *p++ = HostName_len;
@@ -590,6 +683,23 @@ unsigned xid;
   p += DhcpIface.class_len;
   memcpy(p,DhcpIface.client_id,DhcpIface.client_len);
   p += DhcpIface.client_len;
+  if (( HostName ) && ( SetFQDNHostName != FQDNdisable ))
+    {
+      /* Draft IETF DHC-FQDN option (81) */
+      *p++ = dhcpFQDNHostName;
+      *p++ = HostName_len + 3;
+      /* Flags: 0000NEOS
+       * S: 1 => Client requests Server to update A RR in DNS as well as PTR
+       * O: 1 => Server indicates to client that DNS has been updated regardless
+       * E: 1 => Name data is DNS format, i.e. <4>host<6>domain<4>com<0> not "host.domain.com"
+       * N: 1 => Client requests Server to not update DNS
+       */
+      *p++ = SetFQDNHostName & 0x9;
+      *p++ = 0; /* rcode1, response from DNS server to DHCP for PTR RR */
+      *p++ = 0; /* rcode2, response from DNS server to DHCP for A RR if S=1 */
+      memcpy(p,HostName,HostName_len);
+      p += HostName_len;
+    }
   *p = endOption;
 
   udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,0,INADDR_BROADCAST,

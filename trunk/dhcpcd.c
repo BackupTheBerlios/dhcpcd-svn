@@ -58,6 +58,7 @@ unsigned	LeaseTime	=	DEFAULT_LEASETIME;
 int		ReplResolvConf	=	1;
 int		ReplNISConf	=	1;
 int		ReplNTPConf	=	1;
+int		RouteMetric	=	1;
 int		SetDomainName	=	0;
 int		SetHostName	=	0;
 int             BroadcastResp   =       0;
@@ -71,11 +72,23 @@ int		SendSecondDiscover	=	0;
 int		Window		=	0;
 char		*ConfigDir	=	CONFIG_DIR;
 int		SetDHCPDefaultRoutes=	1;
-int             Persistent      =       0;
+int		Persistent	=	0;
+int		DownIfaceOnStop	=	1;
+
 #if 0
 unsigned char	ClientMACaddr[ETH_ALEN];
 int		ClientMACaddr_ind =	0;
 #endif
+
+char		*etcDir		=	ETC_DIR;
+char		resolv_file[128];
+char		resolv_file_sv[128];
+char		nis_file[128];
+char		nis_file_sv[128];
+char		ntp_file[128];
+char		ntp_file_sv[128];
+int		SetFQDNHostName	=	FQDNdisable;
+
 /*****************************************************************************/
 void print_version()
 {
@@ -110,6 +123,7 @@ char *argc[],*argv[];
   int k			=	1;
   int i			=	1;
   int j;
+  char *FQDNOption	=	NULL;
 
 /*
  * Ensure that fds 0, 1, 2 are open, to /dev/null if nowhere else.
@@ -143,6 +157,23 @@ prgs: switch ( argc[i][s] )
 	    s++;
 	    killFlag=SIGHUP;
 	    goto prgs;
+	  case 'm':
+	    if ( argc[i][s+1] ) goto usage;
+	    i++;
+	    if ( ! argc[i] ) goto usage;
+	    char *tmp;
+	    errno = 0;
+	    long m=strtol(argc[i], &tmp, 0);
+	    if (argc[i][0] == '\0' || *tmp != '\0' ) goto usage;
+	    if ((errno == ERANGE &&
+			(m == LONG_MAX || m == LONG_MIN )) ||
+		    (m > INT_MAX || m < INT_MIN))
+		goto usage;
+	    RouteMetric=m;
+	    if (RouteMetric < INT_MAX) RouteMetric++;
+	    i++;
+	    s=1;
+	    break;
 	  case 'n':
 	    s++;
 	    killFlag=SIGALRM;
@@ -191,6 +222,13 @@ prgs: switch ( argc[i][s] )
 	    i++;
 	    ConfigDir=argc[i++];
 	    if ( ConfigDir == NULL || ConfigDir[0] != '/' ) goto usage;
+	    s=1;
+	    break;
+	  case 'e':
+	    if (argc[i][s+1] ) goto usage;
+	    i++;
+	    etcDir=argc[i++];
+	    if (etcDir == NULL || etcDir[0] != '/' ) goto usage;
 	    s=1;
 	    break;
 #if 0
@@ -263,6 +301,21 @@ prgs: switch ( argc[i][s] )
 	    fprintf(stderr,"****  %s: too long HostName string: strlen=%d\n",
 	    argc[0],HostName_len);
 	    break;
+	  case 'F':
+	    if ( argc[i][s+1] ) goto usage;
+	    i++;
+	    FQDNOption=argc[i++];
+	    if ( FQDNOption == NULL || FQDNOption[0] == '-' ) goto usage;
+	    if ( strcmp(FQDNOption,"none") == 0 )
+	      SetFQDNHostName=FQDNnone;
+	    else if ( strcmp(FQDNOption,"ptr") == 0 )
+	      SetFQDNHostName=FQDNptr;
+	    else if ( strcmp(FQDNOption,"both") == 0 )
+	      SetFQDNHostName=FQDNboth;
+	    else
+	      goto usage;
+	    s=1;
+	    break;
 	  case 't':
 	    if ( argc[i][s+1] ) goto usage;
 	    i++;
@@ -328,12 +381,17 @@ prgs: switch ( argc[i][s] )
 	      goto usage;
 	    s=1;
 	    if ( LeaseTime > 0 ) break;
+	  case 'o':
+	    s++;
+	    DownIfaceOnStop=0;
+	    break;
           default:
 usage:	    print_version();
 	    fprintf(stderr,
-"Usage: dhcpcd [-dknprBCDHNRSTY] [-l leasetime] [-h hostname] [-t timeout]\n\
+"Usage: dhcpcd [-dknoprBCDHNRSTY] [-l leasetime] [-h hostname] [-t timeout]\n\
        [-i vendorClassID] [-I ClientID] [-c filename] [-s [ipaddr]]\n\
-       [-w windowsize] [-L ConfigDir] [-G [gateway]] [interface]\n");
+       [-w windowsize] [-L ConfigDir] [-G [gateway]] [-e etcDir]\n\
+       [-m routeMetric] [-F none|ptr|both] [interface]\n");
 	    exit(1);
 	}
     else
@@ -370,6 +428,18 @@ usage:	    print_version();
       syslog(LOG_ERR,"mkdir(\"%s\",0): %m\n",ConfigDir);
       exit(1);
     }
+  if ( mkdir(etcDir,S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH) && errno != EEXIST )
+    {
+      syslog(LOG_ERR,"mkdir(\"%s\",0): %m\n", etcDir);
+      exit(1);
+    }
+  snprintf(resolv_file, sizeof(resolv_file), RESOLV_FILE, etcDir);
+  snprintf(resolv_file_sv, sizeof(resolv_file_sv), ""RESOLV_FILE"-%s.sv", etcDir, IfName);
+  snprintf(nis_file, sizeof(nis_file), NIS_FILE, etcDir);
+  snprintf(nis_file_sv, sizeof(nis_file_sv), ""NIS_FILE"-%s.sv", etcDir, IfName);
+  snprintf(ntp_file, sizeof(ntp_file), NTP_FILE, etcDir);
+  snprintf(ntp_file_sv, sizeof(ntp_file_sv), ""NTP_FILE"-%s.sv", etcDir, IfName);
+
   magic_cookie = htonl(MAGIC_COOKIE);
   dhcpMsgSize = htons(sizeof(dhcpMessage)+sizeof(udpiphdr));
   nleaseTime = htonl(LeaseTime);

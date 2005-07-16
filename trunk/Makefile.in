@@ -106,7 +106,7 @@ install_sh = @install_sh@
 libdir = @libdir@
 libexecdir = @libexecdir@
 localstatedir = @localstatedir@
-mandir = /usr/man
+mandir = @mandir@
 oldincludedir = @oldincludedir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
@@ -158,7 +158,7 @@ dhcpcd_SOURCES = \
 
 
 configdir = ${sysconfdir}/dhcpc
-docdir = /usr/doc
+docdir = @datadir@/doc/@PACKAGE@-@DHCPCD_VERSION@
 
 config_DATA = 
 

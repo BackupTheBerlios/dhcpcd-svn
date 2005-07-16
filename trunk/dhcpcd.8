@@ -9,17 +9,20 @@ dhcpcd \- DHCP client daemon
 .in +.5i
 .ti -.5i
 dhcpcd
-\%[\-dknprBCDHNRSTY]
+\%[\-dknoprBCDHNRSTY]
 \%[\-t\ <timeout>]
 \%[\-c\ <ExecFilePath>]
-\%[-h\ <hostname>]
-\%[-i\ <vendorClassID>]
-\%[-I\ <clientID>]
+\%[\-h\ <hostname>]
+\%[\-i\ <vendorClassID>]
+\%[\-I\ <clientID>]
 \%[\-l\ <leasetime>]
 \%[\-s\ [ipaddr]]
+\%[\-F\ none|ptr|both]
 \%[\-G\ [gateway]]
 \%[\-w\ <windowsize>]
 \%[\-L\ <ConfigDir>]
+\%[\-e\ <etcDir>]
+\%[\-m\ <routeMetric>]
 \%[interface]
 .in -.5i
 .SH DESCRIPTION
@@ -28,7 +31,10 @@ is an implementation of the DHCP client specified in
 .B RFC2131
 (when -r option is not specified) and
 .B RFC1541
-(when -r option is specified).
+(when -r option is specified).  Support for
+.B draft-ietf-dhc-fqdn-option
+in use in many systems (particularly networks using Microsoft DHCP
+servers) is also provided.
 
 It gets the host information (IP address, netmask, broadcast address,
 etc.) from a DHCP server and configures the network interface of the
@@ -95,6 +101,9 @@ system went down. (see also
 .B -p
 )
 .TP
+.BI \-m \ <routemetric>
+routes will be added with the given metric. The default is 0.
+.TP
 .BI \-n
 Sends
 .B SIGALRM
@@ -108,17 +117,32 @@ is ignored and
 .B dhcpcd
 follows the normal startup procedure.
 .TP
+.BI \-o
+Stops
+.B dhcpcd
+from bringing the interface down when it is terminated with the
+.B SIGTERM
+signal. This is useful when the interace is controlled by another daemon
+such as
+.B ifplugd
+or
+.B wpa_supplicant
+and the daemon requires the interface to remain up.
+.TP
 .BI \-p
 Stops
 .B dhcpcd
-from bring down an interface when it is terminated with 
+from bringing the interface down when it is terminated with the
 .B SIGTERM
-This is useful when a host is running with an NFS-mounted root
+signal. This is useful when a host is running with an NFS-mounted root
 filesystem over an interface controlled by DHCP. It should not be used
 except in those circumstances, since if 
 .B dhcp
 is stopped it can no longer down an interface at the end of its
 lease period when the lease is not renewed.
+Unlike the 
+.B \-o
+option, the address remains on the interface.
 .TP
 .BI \-r
 Makes dhcpcd RFC1541 (obsolete) compliant.
@@ -137,6 +161,31 @@ Forces
 to set domainname of the host to the domainname option
 supplied by DHCP server.
 .TP
+.BI \-F \ none|ptr|both
+Forces
+.B dhcpcd
+to request the DHCP server update the DNS using the FQDN option
+instead of the Hostname option. The name used by this option
+is specified with the \fB-h\fP switch, which must be present. If
+the \fB-h\fP switch is not present, the FQDN option is ignored.
+The name should be fully qualified, although servers usually
+accept a simple name.
+.I both
+requests that the DHCP server update both the A and PTR
+records in the DNS.
+.I ptr
+requests that the DHCP server updates only the PTR record in
+the DNS.
+.I none
+requests that the DHCP server perform no updates.
+.B dhcpcd
+does not perform any DNS update, even when the server is
+requested to perform no updates.  This can be easily
+implemented outside the client; all the necessary
+information is recorded in the
+.I <ConfigDir>/dhcpcd-<interface>.info
+file.
+.TP
 .BI \-H
 Forces
 .B dhcpcd
@@ -151,7 +200,7 @@ received from DHCP server.
 will use
 .I <ConfigDir>
 directory instead of default
-.I /etc/dhcpc
+.I /var/lib/dhcpc
 to store configuration information.
 .TP
 .BI \-S
@@ -166,21 +215,21 @@ before replying on DHCP_REQUEST.
 Prevents
 .B dhcpcd
 from replacing existing
-.I /etc/resolv.conf
+.I <etcDir>/resolv.conf
 file.
 .TP
 .BI \-Y
 Prevents
 .B dhcpcd
 from replacing existing
-.I /etc/yp.conf
+.I <etcDir>/yp.conf
 file. Domainname is not updated unless \fB-D\fP is specified.
 .TP
 .BI \-N
 Prevents
 .B dhcpcd
 from replacing existing
-.I /etc/ntp.conf
+.I <etcDir>/ntp.conf
 file.
 .TP
 .BI \-T
@@ -191,7 +240,7 @@ doesn't actually configure the interface. It does however
 write the
 .I <ConfigDir>/dhcpcd-<interface>.info
 and
-.I <ConfigDir>/dhcpcd-<interface>.cache
+.I /var/cache/dhcpcd-<interface>.cache
 files and it does attempt to execute
 .I <ConfigDir>/dhcpcd.exe
 script. The pathname of
@@ -243,6 +292,8 @@ specifies a string used for the hostname option field when
 sends DHCP messages. Some DHCP servers, notably those used by
 @Home Networks, require the hostname option
 field containing a specific string in the DHCP messages from clients.
+When combined with the -F switch, specifies the string used for the
+FQDN option field instead of the hostname option field.
 .TP
 .BI \-i \ <vendorClassID>
 Specifies the vendor class identifier string.
@@ -274,7 +325,7 @@ If there is no IP address currently assigned
 to the interface
 .B dhcpcd
 will use previously obtained IP address stored in
-.I <ConfigDir>/dhcpcd-<interface>.cache
+.I /var/cache/dhcpcd-<interface>.cache
 file. 
 .TP
 .BI \-G \ [gateway]
@@ -287,6 +338,12 @@ is supplied then use it for default route.
 .BI \-w \ <windowsize>
 Specifies the window size for the gateway route. Default = 32768.
 .TP
+.TP
+.NI \-e \ <etcDir>
+Specifies where
+.B dhcpcd
+should create resolv.conf, ntp.conf and yp.conf. Default is the /etc
+directory.
 .BI interface
 Specifies the network interface name (eth0, eth1, etc.).
 .B dhcpcd
@@ -297,7 +354,7 @@ unless an explicit name is specified.
 .SH FILES
 .PD 0
 .TP
-.BI /etc/dhcpc
+.BI /var/lib/dhcpc
 Default 
 .I <ConfigDir>
 directory used for storing files
@@ -348,7 +405,7 @@ has been started with
 .I -d
 debug flag.
 .TP
-.BI <ConfigDir>/dhcpcd-<interface>.cache
+.BI /var/cache/dhcpcd-<interface>.cache
 Cache file containing the previously assigned IP address and
 some other things.
 The word
@@ -359,43 +416,43 @@ to which
 .B dhcpcd
 is attached.
 .TP
-.BI /etc/resolv.conf
+.BI <etcDir>/resolv.conf
 file created by
 .B dhcpcd
 when the client receives DNS and domain name options.
 The old
-.B /etc/resolv.conf
+.B <etcDir>/resolv.conf
 file is renamed to
-.B /etc/resolv.conf.sv
+.B <etcDir>/resolv.conf.sv
 and will be restored back when
 .B dhcpcd
 exits for any reason.
 .TP
-.BI /etc/yp.conf
+.BI <etcDir>/yp.conf
 file created by
 .B dhcpcd
 when the client receives NIS options.
 The old
-.B /etc/yp.conf
+.B <etcDir>/yp.conf
 file is renamed to
-.B /etc/yp.conf.sv
+.B <etcDir>/yp.conf.sv
 and is restored back when
 .B dhcpcd
 exits for any reason.
 .TP
-.BI /etc/ntp.conf
+.BI <etcDir>/ntp.conf
 file created by
 .B dhcpcd
 when the client receives NTP options.
 The old
-.B /etc/ntp.conf
+.B <etcDir>/ntp.conf
 file is renamed to
-.B /etc/ntp.conf.sv
+.B <etcDir>/ntp.conf.sv
 and is restored back when
 .B dhcpcd
 exits for any reason.
 .TP
-.BI <ConfigDir>/dhcpcd-<interface>.pid
+.BI /var/run/dhcpcd-<interface>.pid
 file containing the process id of
 .B dhcpcd.
 The word
@@ -407,10 +464,18 @@ to which
 is attached.
 
 .SH SEE ALSO
+.BR dig (1),
+.BR nslookup (8),
+.BR nsupdate (8)
+.LP
 .I Dynamic Host Configuration Protocol,
 RFC2131 and RFC1541 (obsolete)
+.LP
 .I DHCP Options and BOOTP Vendor Extensions,
 RFC2132
+.LP
+.I Draft DHC FQDN Option specification,
+draft-ietf-dhc-fqdn-option
 
 .SH BUGS
 .PD 0

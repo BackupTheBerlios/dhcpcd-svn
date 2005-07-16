@@ -26,21 +26,22 @@
 #include <paths.h>
 #include "dhcpcd.h"
 
+#define CACHE_DIR		"/var/cache"
 #define PID_FILE_PATH		"%.0s/var/run/"PROGRAM_NAME"-%s.pid"
 #define DHCP_CACHE_FILE		"%s/"PROGRAM_NAME"-%s.cache"
 #define DHCP_HOSTINFO		"%s/"PROGRAM_NAME"-%s.info"
 #define EXEC_ON_CHANGE		"%.0s/etc/dhcpc/"PROGRAM_NAME".exe"
 
 #ifdef EMBED
+#define ETC_DIR			"/etc/config"
 #define CONFIG_DIR		"/etc/config/dhcpc"
-#define RESOLV_CONF		"/etc/config/resolv.conf"
-#define NIS_CONF		"/etc/config/yp.conf"
-#define NTP_CONF		"/etc/config/ntp.conf"
 #else
+#define ETC_DIR			"/etc"
 #define CONFIG_DIR		"/var/lib/dhcpc"
-#define RESOLV_CONF		"/etc/resolv.conf"
-#define NIS_CONF		"/etc/yp.conf"
-#define NTP_CONF		"/etc/ntp.conf"
 #endif
+
+#define RESOLV_FILE		"%s/resolv.conf"
+#define NIS_FILE		"%s/yp.conf"
+#define NTP_FILE		"%s/ntp.conf"
 
 #endif

@@ -41,7 +41,7 @@ char cache_file[128];
 int readDhcpCache()
 {
   int i,o;
-  snprintf(cache_file,sizeof(cache_file),DHCP_CACHE_FILE,ConfigDir,IfNameExt);
+  snprintf(cache_file,sizeof(cache_file),DHCP_CACHE_FILE,CACHE_DIR,IfNameExt);
   i=open(cache_file,O_RDONLY);
   if ( i == -1 ) return -1;
   o=read(i,(char *)&DhcpIface,sizeof(dhcpInterface));
@@ -54,6 +54,6 @@ int readDhcpCache()
 /*****************************************************************************/
 void deleteDhcpCache()
 {
-  snprintf(cache_file,sizeof(cache_file),DHCP_CACHE_FILE,ConfigDir,IfNameExt);
+  snprintf(cache_file,sizeof(cache_file),DHCP_CACHE_FILE,CACHE_DIR,IfNameExt);
   unlink(cache_file);
 }

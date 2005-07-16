@@ -131,8 +131,20 @@ enum
   dhcpT2value				=	59,
   dhcpClassIdentifier			=	60,
   dhcpClientIdentifier			=	61,
+  dhcpFQDNHostName			=	81,
   dnsSearchPath                         =       119, /* RFC 3397 */
   endOption				=	255
+};
+
+/* SetFQDNHostName values - lsnybble used in flags
+ * byte (see buildmsg.c), hsnybble to create order
+ * and to allow 0x00 to mean disable
+ */
+enum {
+  FQDNdisable				=	0x00,
+  FQDNnone				=	0x18,
+  FQDNptr				=	0x20,
+  FQDNboth				=	0x31
 };
 
 typedef struct dhcpInterface
