@@ -3,6 +3,7 @@
     Applied Debian patchset 22 and tagged it
     Applied Gentoo patchset 12 and tagged it
     Trimmed crud files (dhcpcd binary, spec files, lsm files, etc )
+    Moved source, dhcpcd.exe and dhcpcd.8 to src subdir
     Updated Makefile.am and configure.in for newer autotools
     Updated the manpage
     Now use ./configure --enable-debug, --enable-arp, --enable-embed
