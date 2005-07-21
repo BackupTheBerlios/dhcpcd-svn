@@ -231,6 +231,16 @@ if ( ioctl(dhcpSocket,SIOCADDRT,&rtent) == -1 )
   }
 return 0;
 }
+
+int islink(char *file) {
+    char b[1];
+    int n = readlink(file, b, 1);
+    if (n == -1)
+	return 0;
+    else
+	return 1;
+}
+
 /*****************************************************************************/
 int dhcpConfig()
 {
@@ -371,7 +381,8 @@ int dhcpConfig()
     ((unsigned char *)&DhcpIface.ciaddr)[3]);
   if ( ReplResolvConf && (DhcpOptions.len[domainName] || DhcpOptions.len[dns]))
     {
-      resolv_renamed=1+rename(resolv_file, resolv_file_sv);
+      if ( ! islink(resolv_file))
+	resolv_renamed=1+rename(resolv_file, resolv_file_sv);
       f=fopen(resolv_file, "w");
       if ( f )
 	{
@@ -404,7 +415,8 @@ int dhcpConfig()
     }
   if ( ReplNISConf && (DhcpOptions.len[nisDomainName] || DhcpOptions.len[nisServers]))
     {
-      yp_renamed=1+rename(nis_file, nis_file_sv);
+      if ( ! islink(nis_file))
+	yp_renamed=1+rename(nis_file, nis_file_sv);
       f=fopen(nis_file, "w");
       if ( f )
 	{
@@ -438,7 +450,8 @@ int dhcpConfig()
     }
   if ( ReplNTPConf && DhcpOptions.len[ntpServers]>=4 )
     {
-      ntp_renamed=1+rename(ntp_file, ntp_file_sv);
+      if ( ! islink(ntp_file))
+	ntp_renamed=1+rename(ntp_file, ntp_file_sv);
       f=fopen(ntp_file, "w");
       if ( f )
  	{
@@ -572,7 +585,7 @@ int dhcpConfig()
 tsc:
   memset(DhcpIface.version,0,sizeof(DhcpIface.version));
   strncpy(DhcpIface.version,VERSION,sizeof(DhcpIface.version));
-  snprintf(hostinfo_file_old,sizeof(hostinfo_file_old),DHCP_CACHE_FILE,CACHE_DIR,IfNameExt);
+  snprintf(hostinfo_file_old,sizeof(hostinfo_file_old),DHCP_CACHE_FILE,CONFIG_DIR,IfNameExt);
   i=open(hostinfo_file_old,O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR+S_IWUSR);
   if ( i == -1 ||
       write(i,(char *)&DhcpIface,sizeof(dhcpInterface)) == -1 ||

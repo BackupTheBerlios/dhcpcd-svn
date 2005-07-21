@@ -2,6 +2,8 @@
  * dhcpcd - DHCP client daemon -
  * Copyright (C) 1996 - 1997 Yoichi Hariguchi <yoichi@fore.com>
  * Copyright (C) 1998 Sergei Viznyuk <sv@phystech.com>
+ * Copyright (C) 2005 Roy Marples <uberlord@gentoo.org>
+ * Copyright (C) 2005 Simon Kelly <simon@thekelleys.org.uk> 
  *
  * Dhcpcd is an RFC2131 and RFC1541 compliant DHCP client daemon.
  *
@@ -26,11 +28,10 @@
 #include <paths.h>
 #include "dhcpcd.h"
 
-#define CACHE_DIR		"/var/cache"
-#define PID_FILE_PATH		"%.0s/var/run/"PROGRAM_NAME"-%s.pid"
-#define DHCP_CACHE_FILE		"%s/"PROGRAM_NAME"-%s.cache"
-#define DHCP_HOSTINFO		"%s/"PROGRAM_NAME"-%s.info"
-#define EXEC_ON_CHANGE		"%.0s/etc/dhcpc/"PROGRAM_NAME".exe"
+#define PID_FILE_PATH		"%.0s/var/run/"PACKAGE"-%s.pid"
+#define DHCP_CACHE_FILE		"%s/"PACKAGE"-%s.cache"
+#define DHCP_HOSTINFO		"%s/"PACKAGE"-%s.info"
+#define EXEC_ON_CHANGE		"%.0s/etc/dhcpc/"PACKAGE".exe"
 
 #ifdef EMBED
 #define ETC_DIR			"/etc/config"

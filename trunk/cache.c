@@ -2,6 +2,8 @@
  * dhcpcd - DHCP client daemon -
  * Copyright (C) 1996 - 1997 Yoichi Hariguchi <yoichi@fore.com>
  * Copyright (C) January, 1998 Sergei Viznyuk <sv@phystech.com>
+ * Copyright (C) 2005 Roy Marples <uberlord@gentoo.org>
+ * Copyright (C) 2005 Simon Kelly <simon@thekelleys.org.uk>
  * 
  * dhcpcd is an RFC2131 and RFC1541 compliant DHCP client daemon.
  *
@@ -41,7 +43,7 @@ char cache_file[128];
 int readDhcpCache()
 {
   int i,o;
-  snprintf(cache_file,sizeof(cache_file),DHCP_CACHE_FILE,CACHE_DIR,IfNameExt);
+  snprintf(cache_file,sizeof(cache_file),DHCP_CACHE_FILE,CONFIG_DIR,IfNameExt);
   i=open(cache_file,O_RDONLY);
   if ( i == -1 ) return -1;
   o=read(i,(char *)&DhcpIface,sizeof(dhcpInterface));
@@ -54,6 +56,6 @@ int readDhcpCache()
 /*****************************************************************************/
 void deleteDhcpCache()
 {
-  snprintf(cache_file,sizeof(cache_file),DHCP_CACHE_FILE,CACHE_DIR,IfNameExt);
+  snprintf(cache_file,sizeof(cache_file),DHCP_CACHE_FILE,CONFIG_DIR,IfNameExt);
   unlink(cache_file);
 }

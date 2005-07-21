@@ -1,3 +1,5 @@
-Please refer to
-http://www.phystech.com/download/
+dhcpcd has been forked from http://www.phystech.com/download/ as it hasn't
+been maintained or accepted patches since Dec 2002.
 
+Since then, several improvements have been made by Debian and Gentoo and this
+is a result of both efforts.

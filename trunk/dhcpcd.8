@@ -1,6 +1,6 @@
 .\" $Id$
 .\"
-.TH dhcpcd 8 "31 January 1998" "dhcpcd 1.3" "Linux System Manager's Manual"
+.TH dhcpcd 8 "20 July 2005" "dhcpcd 2.0" "Linux System Manager's Manual"
 
 .SH NAME
 dhcpcd \- DHCP client daemon
@@ -101,7 +101,7 @@ system went down. (see also
 .B -p
 )
 .TP
-.BI \-m \ <routemetric>
+.BI \-m \ <routeMetric>
 routes will be added with the given metric. The default is 0.
 .TP
 .BI \-n
@@ -240,13 +240,8 @@ doesn't actually configure the interface. It does however
 write the
 .I <ConfigDir>/dhcpcd-<interface>.info
 and
-.I /var/cache/dhcpcd-<interface>.cache
-files and it does attempt to execute
-.I <ConfigDir>/dhcpcd.exe
-script. The pathname of
-.I dhcpcd.exe
-executable script can
-be changed with
+.I <ConfigDir>/dhcpcd-<interface>.cache
+files and it does attempt to execute the script defined by the
 .I \-c \ <ExecFilePath>
 option.
 .B \-T
@@ -275,10 +270,10 @@ the lease is lost, it will try forever to get another.
 .TP
 .BI \-c \ <ExecFilePath>
 .B dhcpcd
-will try to execute 
+will try to execute
 .I <ExecFilePath>
 script instead of default
-.I <ConfigDir>/dhcpcd.exe
+.I /etc/dhcpc/dhcpcd.exe
 script every time it configures or brings down the interface. See the
 description of
 .I dhcpcd.exe
@@ -325,7 +320,7 @@ If there is no IP address currently assigned
 to the interface
 .B dhcpcd
 will use previously obtained IP address stored in
-.I /var/cache/dhcpcd-<interface>.cache
+.I <ConfigDir>/dhcpcd-<interface>.cache
 file. 
 .TP
 .BI \-G \ [gateway]
@@ -338,14 +333,14 @@ is supplied then use it for default route.
 .BI \-w \ <windowsize>
 Specifies the window size for the gateway route. Default = 32768.
 .TP
-.TP
-.NI \-e \ <etcDir>
+.BI \-e \ <etcDir>
 Specifies where
 .B dhcpcd
 should create resolv.conf, ntp.conf and yp.conf. Default is the /etc
 directory.
 .BI interface
 Specifies the network interface name (eth0, eth1, etc.).
+.TP
 .B dhcpcd
 uses the network interface
 .I eth0
@@ -374,7 +369,7 @@ is actually replaced with the network interface name like
 .I eth0
 to which dhcpcd is attached.
 .TP
-.BI <ConfigDir>/dhcpcd.exe
+.BI /etc/dhcpc/dhcpcd.exe
 script file, which
 .B dhcpcd
 will try to execute whenever it configures or brings down the interface. The
@@ -405,7 +400,7 @@ has been started with
 .I -d
 debug flag.
 .TP
-.BI /var/cache/dhcpcd-<interface>.cache
+.BI <ConfigDir>/dhcpcd-<interface>.cache
 Cache file containing the previously assigned IP address and
 some other things.
 The word
@@ -490,7 +485,15 @@ predictable.
 v.<1.3
 .LP
 Yoichi Hariguchi <yoichi@fore.com>
+
 .LP
 v.1.3
 .LP
 Sergei Viznyuk <sv@phystech.com>
+.LP
+
+v.>1.3
+.LP
+Roy Marples <uberlord@gentoo.org>
+.LP
+Simon Kelly <simon@thekelleys.org.uk>

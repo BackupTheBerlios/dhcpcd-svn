@@ -2,6 +2,8 @@
  * dhcpcd - DHCP client daemon -
  * Copyright (C) 1996 - 1997 Yoichi Hariguchi <yoichi@fore.com>
  * Copyright (C) January, 1998 Sergei Viznyuk <sv@phystech.com>
+ * Copyright (C) 2005 Roy Marples <uberlord@gentoo.org>
+ * Copyright (C) 2005 Simon Kelly <simon@thekelleys.org.uk>
  * 
  * dhcpcd is an RFC2131 and RFC1541 compliant DHCP client daemon.
  *
@@ -421,7 +423,7 @@ usage:	    print_version();
   if ( killFlag ) killPid(killFlag);
   if ( ! TestCase ) checkIfAlreadyRunning();
   if ( versionFlag ) print_version();
-  openlog(PROGRAM_NAME,LOG_PID|(DebugFlag?LOG_CONS:0),LOG_LOCAL0);
+  openlog(PACKAGE,LOG_PID|(DebugFlag?LOG_CONS:0),LOG_LOCAL0);
   signalSetup();
   if ( mkdir(ConfigDir,S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH) && errno != EEXIST )
     {

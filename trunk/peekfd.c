@@ -2,6 +2,8 @@
  * peekfd.c
  * 
  * Copyright (C) January, 1998 Sergei Viznyuk <sv@phystech.com>
+ * Copyright (C) 2005 Roy Marples <uberlord@gentoo.org>
+ * Copyright (C) 2005 Simon Kelly <simon@thekelleys.org.uk>
  * 
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
@@ -21,6 +23,8 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "config.h"
+
 /*****************************************************************************/
 int peekfd(s,tv_usec)
 int s;
