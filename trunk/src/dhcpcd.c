@@ -98,7 +98,9 @@ void print_version()
 DHCP Client Daemon v."VERSION"\n\
 Copyright (C) 1996 - 1997 Yoichi Hariguchi <yoichi@fore.com>\n\
 Copyright (C) January, 1998 Sergei Viznyuk <sv@phystech.com>\n\
-Location: http://www.phystech.com/download/\n");
+Copyright (C) 2005 Roy Marples <uberlord@gentoo.org>\n\
+                   Simon Kelly <simon@thekelleys.org.uk>\n\
+Location: http://developer.berlios.de/projects/dhcpcd/\n\n");
 }
 /*****************************************************************************/
 void checkIfAlreadyRunning()
