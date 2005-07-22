@@ -1,7 +1,6 @@
 EXTRA_DIST		=		\
-	README				\
 	$(man_MANS)			\
-	dhcpcd.sh
+	dhcpcd.exe
 
 man_MANS		= @PACKAGE@.8
 

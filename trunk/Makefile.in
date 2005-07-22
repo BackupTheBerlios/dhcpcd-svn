@@ -103,6 +103,8 @@ sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
+EXTRA_DIST = README
+
 SUBDIRS = src
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -348,8 +350,13 @@ dist-gzip: distdir
 	$(AMTAR) chof - $(distdir) | GZIP=$(GZIP_ENV) gzip -c >$(distdir).tar.gz
 	$(am__remove_distdir)
 
+dist-bzip2: distdir
+	$(AMTAR) chof - $(distdir) | bzip2 -9 -c >$(distdir).tar.bz2
+	$(am__remove_distdir)
+
 dist dist-all: distdir
 	$(AMTAR) chof - $(distdir) | GZIP=$(GZIP_ENV) gzip -c >$(distdir).tar.gz
+	$(AMTAR) chof - $(distdir) | bzip2 -9 -c >$(distdir).tar.bz2
 	$(am__remove_distdir)
 
 # This target untars the dist file and tries a VPATH configuration.  Then
@@ -489,13 +496,13 @@ uninstall-info: uninstall-info-recursive
 
 .PHONY: $(RECURSIVE_TARGETS) CTAGS GTAGS all all-am check check-am clean \
 	clean-generic clean-recursive ctags ctags-recursive dist \
-	dist-all dist-gzip distcheck distclean distclean-generic \
-	distclean-hdr distclean-recursive distclean-tags distcleancheck \
-	distdir distuninstallcheck dvi dvi-am dvi-recursive info \
-	info-am info-recursive install install-am install-data \
-	install-data-am install-data-recursive install-exec \
-	install-exec-am install-exec-recursive install-info \
-	install-info-am install-info-recursive install-man \
+	dist-all dist-bzip2 dist-gzip distcheck distclean \
+	distclean-generic distclean-hdr distclean-recursive \
+	distclean-tags distcleancheck distdir distuninstallcheck dvi \
+	dvi-am dvi-recursive info info-am info-recursive install \
+	install-am install-data install-data-am install-data-recursive \
+	install-exec install-exec-am install-exec-recursive \
+	install-info install-info-am install-info-recursive install-man \
 	install-recursive install-strip installcheck installcheck-am \
 	installdirs installdirs-am installdirs-recursive \
 	maintainer-clean maintainer-clean-generic \
