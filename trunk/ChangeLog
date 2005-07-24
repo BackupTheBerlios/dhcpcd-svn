@@ -11,7 +11,7 @@
     .sv files are now only created when the target is not a symbolic link
 
 ** New Maintainers -	Roy Marples <uberlord@gentoo.org>
-			Simon Kelly <simon@thekelleys.org.uk> 
+			Simon Kelley <simon@thekelleys.org.uk> 
 
 12/31/02 - v.1.3.22-pl4
 	Peter Poeml <poeml@suse.de> submitted patches to:
