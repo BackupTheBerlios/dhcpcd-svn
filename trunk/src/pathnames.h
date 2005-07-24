@@ -31,7 +31,7 @@
 #define PID_FILE_PATH		"/var/run/"PACKAGE"-%s.pid"
 #define DHCP_CACHE_FILE		"%s/"PACKAGE"-%s.cache"
 #define DHCP_HOSTINFO		"%s/"PACKAGE"-%s.info"
-#define EXEC_ON_CHANGE		"%/etc/dhcpc/"PACKAGE".exe"
+#define EXEC_ON_CHANGE		"/etc/dhcpc/"PACKAGE".exe"
 
 #ifdef EMBED
 #define ETC_DIR			"/etc/config"
