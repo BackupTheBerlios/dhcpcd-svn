@@ -3,7 +3,7 @@
  * Copyright (C) 1996 - 1997 Yoichi Hariguchi <yoichi@fore.com>
  * Copyright (C) January, 1998 Sergei Viznyuk <sv@phystech.com>
  * Copyright (C) 2005 Roy Marples <uberlord@gentoo.org>
- * Copyright (C) 2005 Simon Kelly <simon@thekelleys.org.uk> 
+ * Copyright (C) 2005 Simon Kelley <simon@thekelleys.org.uk> 
  * 
  * dhcpcd is an RFC2131 and RFC1541 compliant DHCP client daemon.
  *
@@ -47,7 +47,7 @@ int sig;
   FILE *fp;
   pid_t pid;
   char pidfile[64];
-  snprintf(pidfile,sizeof(pidfile),PID_FILE_PATH,ConfigDir,IfNameExt);
+  snprintf(pidfile,sizeof(pidfile),PID_FILE_PATH,IfNameExt);
   fp=fopen(pidfile,"r");
   if ( fp == NULL ) goto ntrn;
   fscanf(fp,"%u",&pid);
@@ -65,7 +65,7 @@ void writePidFile(pid_t pid)
 {
   FILE *fp;
   char pidfile[64];
-  snprintf(pidfile,sizeof(pidfile),PID_FILE_PATH,ConfigDir,IfNameExt);
+  snprintf(pidfile,sizeof(pidfile),PID_FILE_PATH,IfNameExt);
   fp=fopen(pidfile,"w");
   if ( fp == NULL )
     {
@@ -79,7 +79,7 @@ void writePidFile(pid_t pid)
 void deletePidFile()
 {
   char pidfile[64];
-  snprintf(pidfile,sizeof(pidfile),PID_FILE_PATH,ConfigDir,IfNameExt);
+  snprintf(pidfile,sizeof(pidfile),PID_FILE_PATH,IfNameExt);
   unlink(pidfile);
 }
 /*****************************************************************************/

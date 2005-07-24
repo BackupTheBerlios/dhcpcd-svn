@@ -3,7 +3,7 @@
  * Copyright (C) 1996 - 1997 Yoichi Hariguchi <yoichi@fore.com>
  * Copyright (C) January, 1998 Sergei Viznyuk <sv@phystech.com>
  * Copyright (C) 2005 Roy Marples <uberlord@gentoo.org>
- * Copyright (C) 2005 Simon Kelly <simon@thekelleys.org.uk>
+ * Copyright (C) 2005 Simon Kelley <simon@thekelleys.org.uk>
  * 
  * dhcpcd is an RFC2131 and RFC1541 compliant DHCP client daemon.
  *
@@ -107,7 +107,7 @@ void checkIfAlreadyRunning()
 {
   int o;
   char pidfile[64];
-  snprintf(pidfile,sizeof(pidfile),PID_FILE_PATH,ConfigDir,IfNameExt);
+  snprintf(pidfile,sizeof(pidfile),PID_FILE_PATH, IfNameExt);
   o=open(pidfile,O_RDONLY);
   if ( o == -1 ) return;
   close(o);
