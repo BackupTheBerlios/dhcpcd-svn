@@ -3,7 +3,7 @@
  * Copyright (C) 1996 - 1997 Yoichi Hariguchi <yoichi@fore.com>
  * Copyright (C) January, 1998 Sergei Viznyuk <sv@phystech.com>
  * Copyright (C) 2005 Roy Marples <uberlord@gentoo.org>
- * Copyright (C) 2005 Simon Kelly <simon@thekelleys.org.uk>
+ * Copyright (C) 2005 Simon Kelley <simon@thekelleys.org.uk>
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
