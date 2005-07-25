@@ -765,11 +765,11 @@ DhcpIface.client_id[6],DhcpIface.client_id[7],DhcpIface.client_id[8]);
 fprintf(f,"FQDNFLAGS=%u\n\
 FQDNRCODE1=%u\n\
 FQDNRCODE2=%u\n\
-FQDNHOSTNAME=%s\n",
+FQDNHOSTNAME='%s'\n",
 ((unsigned char *)DhcpOptions.val[dhcpFQDNHostName])[0],
 ((unsigned char *)DhcpOptions.val[dhcpFQDNHostName])[1],
 ((unsigned char *)DhcpOptions.val[dhcpFQDNHostName])[2],
-(((char *)DhcpOptions.val[dhcpFQDNHostName])+3));
+(cleanmetas(((char *)DhcpOptions.val[dhcpFQDNHostName])+3)));
 	    }
 	}
       fclose(f);
