@@ -149,6 +149,8 @@ char *argc[],*argv[];
     if ( argc[i][0]=='-' )
 prgs: switch ( argc[i][s] )
 	{
+	  char *tmp;
+	  long m;
 	  case 0:
 	    i++;
 	    s=1;
@@ -165,9 +167,8 @@ prgs: switch ( argc[i][s] )
 	    if ( argc[i][s+1] ) goto usage;
 	    i++;
 	    if ( ! argc[i] ) goto usage;
-	    char *tmp;
 	    errno = 0;
-	    long m=strtol(argc[i], &tmp, 0);
+	    m=strtol(argc[i], &tmp, 0);
 	    if (argc[i][0] == '\0' || *tmp != '\0' ) goto usage;
 	    if ((errno == ERANGE &&
 			(m == LONG_MAX || m == LONG_MIN )) ||
