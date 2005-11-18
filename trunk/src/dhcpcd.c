@@ -49,7 +49,7 @@ int		IfNameExt_len	=	DEFAULT_IFNAME_LEN;
 char		*HostName	=	NULL;
 int		HostName_len	=	0;
 char		*Cfilename	=	NULL;
-unsigned char	*ClassID	=	NULL;
+char		*ClassID	=	NULL;
 int		ClassID_len	=	0;
 unsigned char	*ClientID	=	NULL;
 int		ClientID_len	=	0;
@@ -289,10 +289,11 @@ prgs: switch ( argc[i][s] )
 	  case 'I':
 	    if ( argc[i][s+1] ) goto usage;
 	    i++;
-	    ClientID=argc[i++];
+	    ClientID=(unsigned char *)argc[i++];
 	    if ( ClientID == NULL || ClientID[0] == '-' ) goto usage;
 	    s=1;
-	    if ( (ClientID_len=strlen(ClientID)) < CLIENT_ID_MAX_LEN+1 ) break;
+	    if ( (ClientID_len=strlen((char *)ClientID)) < CLIENT_ID_MAX_LEN+1 )
+		break;
 	    fprintf(stderr,"****  %s: too long ClientID string: strlen=%d\n",
 	    argc[0],ClientID_len);
 	    goto usage;

@@ -208,7 +208,7 @@ int parseDhcpMsgRecv() /* this routine parses dhcp message received */
 	    if (p + 2 + p[1] >= end)
 	      goto swend; /* corrupt packet */
 
-	    if (len = decodeSearch(p+2, p[1], NULL))
+	    if ((len = decodeSearch(p+2, p[1], NULL)))
 	      {
 		if ( DhcpOptions.val[*p] )
 		  free(DhcpOptions.val[*p]);
@@ -691,7 +691,8 @@ void (*buildUdpIpMsg)(unsigned);
 {
   struct sockaddr addr;
   struct timeval begin, current, diff;
-  int i,len,o,timeout=0;
+  int i,len,timeout=0;
+  socklen_t addrLength;
   char foobuf[512];
   const struct udphdr *udpRecv;
   int j=DHCP_INITIAL_RTO/2;
@@ -724,9 +725,9 @@ void (*buildUdpIpMsg)(unsigned);
 	  struct ip ipRecv_local;
   	  char *tmp_ip;
 	  memset(&UdpIpMsgRecv,0,sizeof(udpipMessage));
-      	  o=sizeof(struct sockaddr);
+      	  addrLength=sizeof(struct sockaddr);
       	  len=recvfrom(dhcpSocket,&UdpIpMsgRecv,sizeof(udpipMessage),0,
-		     (struct sockaddr *)&addr,&o);
+		     (struct sockaddr *)&addr,&addrLength);
 	  if ( len == -1 )
     	    {
       	      syslog(LOG_ERR,"recvfrom: %m\n");

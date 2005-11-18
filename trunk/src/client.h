@@ -153,14 +153,14 @@ enum {
 
 typedef struct dhcpInterface
 {
-  unsigned char	version[11];
+  char		version[11];
   int		ciaddr;
   int		siaddr;
   int		class_len;
   int		client_len;
   unsigned int	xid;
   unsigned char	shaddr[ETH_ALEN];
-  unsigned char	class_id[CLASS_ID_MAX_LEN];
+  char		class_id[CLASS_ID_MAX_LEN];
   unsigned char	client_id[CLIENT_ID_MAX_LEN];
 #if 0
   unsigned char chaddr[ETH_ALEN];
