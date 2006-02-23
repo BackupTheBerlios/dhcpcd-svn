@@ -44,6 +44,7 @@
 #include "client.h"
 
 extern	int			dhcpSocket;
+extern  int                     udpFooSocket;
 extern	int			prev_ip_addr;
 extern	int			Window;
 extern  int			SetDHCPDefaultRoutes;
@@ -112,6 +113,11 @@ char *prm;
 #endif
     {
       char *argc[5],exec_on_change[128];
+      
+      close(dhcpSocket);
+      if (udpFooSocket != -1)
+	close(udpFooSocket);
+
       if ( Cfilename )
 	snprintf(exec_on_change,sizeof(exec_on_change),Cfilename);
       else
@@ -587,7 +593,7 @@ int dhcpConfig()
 tsc:
   memset(DhcpIface.version,0,sizeof(DhcpIface.version));
   strncpy(DhcpIface.version,VERSION,sizeof(DhcpIface.version));
-  snprintf(hostinfo_file_old,sizeof(hostinfo_file_old),DHCP_CACHE_FILE,ConfigDir,IfNameExt);
+  snprintf(hostinfo_file_old,sizeof(hostinfo_file_old),DHCP_CACHE_FILE,CONFIG_DIR,IfNameExt);
   i=open(hostinfo_file_old,O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR+S_IWUSR);
   if ( i == -1 ||
       write(i,(char *)&DhcpIface,sizeof(dhcpInterface)) == -1 ||

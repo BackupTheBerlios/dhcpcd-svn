@@ -830,6 +830,7 @@ void (*buildUdpIpMsg)(unsigned);
 /*****************************************************************************/
 void *dhcpStart()
 {
+  int flags;
   int o = 1;
   unsigned i=0;
   struct ifreq	ifr;
@@ -842,7 +843,9 @@ void *dhcpStart()
 #else
   dhcpSocket = socket(AF_PACKET,SOCK_PACKET,htons(ETH_P_ALL));
 #endif
-  if ( dhcpSocket == -1 )
+  if (dhcpSocket == -1 ||
+      (flags = fcntl(dhcpSocket, F_GETFL, 0)) == -1 ||
+      fcntl(dhcpSocket, F_SETFL, flags | O_NONBLOCK) == -1)
     {
       syslog(LOG_ERR,"dhcpStart: socket: %m\n");
       exit(1);
@@ -943,7 +946,7 @@ void *dhcpStart()
   ip_id=i&0xffff;
 
   udpFooSocket = socket(AF_INET,SOCK_DGRAM,0);
-  if ( udpFooSocket == -1 )
+  if (udpFooSocket == -1)
     {
       syslog(LOG_ERR,"dhcpStart: socket: %m\n");
       exit(1);
@@ -1124,7 +1127,11 @@ void (*buildDhcpMsg)(unsigned);
 /*****************************************************************************/
 void *dhcpBound()
 {
-  int i;
+  struct timeval t;
+  int i, maxfd;
+  fd_set rset;
+  char foobuf[512];
+
   if ( sigsetjmp(env,0xffff) ) return &dhcpRenew;
   i=ReqSentTime+ntohl(*(unsigned int *)DhcpOptions.val[dhcpT1value])-time(NULL);
   if ( i > 0 )
@@ -1132,7 +1139,44 @@ void *dhcpBound()
   else
     return &dhcpRenew;
 
-  sleep(ntohl(*(u_int *)DhcpOptions.val[dhcpT1value]));
+  /* This used to be a sleep, but sleeping for hours/days with sockets open
+     on ports where broadcasts happen means wasting kernel buffer memory 
+     on hundreds of useless packets. 
+
+     This code waits in the same way, but it wakes up and reads any unexpected
+     packets to free the buffers.
+
+     Note that this code is linux-specific, since it relies on select to 
+     update the timeval with the time remaining. 
+  */
+
+  t.tv_sec = ntohl(*(u_int *)DhcpOptions.val[dhcpT1value]);
+  t.tv_usec = 0;
+ 
+ waitmore: 
+  FD_ZERO(&rset);
+  maxfd = dhcpSocket;
+  FD_SET(dhcpSocket, &rset);
+  if (udpFooSocket  != -1)
+    {
+      if (udpFooSocket > maxfd)
+	maxfd = udpFooSocket;
+      FD_SET(udpFooSocket, &rset);
+    }
+
+  if (select(maxfd+1, &rset, NULL, NULL, &t) != -1)
+    {
+      
+      if (FD_ISSET(udpFooSocket, &rset))
+	while (recvfrom(udpFooSocket,(void *)foobuf,sizeof(foobuf),0,NULL,NULL) != -1 );
+      
+      if (FD_ISSET(dhcpSocket, &rset))
+	while (recvfrom(dhcpSocket,(void *)foobuf,sizeof(foobuf),0,NULL,NULL) != -1 );
+      
+      if (t.tv_sec > 0)
+	goto waitmore;
+    }
+
   return &dhcpRenew;
 }
 /*****************************************************************************/
