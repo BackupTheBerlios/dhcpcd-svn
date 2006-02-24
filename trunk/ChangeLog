@@ -1,3 +1,8 @@
+24 Feb 2006; Roy Marples <uberlord@gentoo.org>
+
+    When a RFC violating space seperated domain name hits treat it like
+    a search path, RFC 3397 so we don't break too many clients.
+
 24 Feb 2006; Simon Kelley <simon@thekelleys.org.uk>
     
    Fixed file descriptor leak. Previously, the raw and UDP sockets were
