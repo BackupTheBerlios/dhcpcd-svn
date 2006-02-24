@@ -1,3 +1,15 @@
+24 Feb 2006; Simon Kelley <simon@thekelleys.org.uk>
+    
+   Fixed file descriptor leak. Previously, the raw and UDP sockets were
+   inherited by the dhcpcd.exe script and its children. If the children
+   changed uid away from route, they would inherit otherwise unavailable
+   rights to access these sockets.
+
+   Replaced sleep() call with calls the select(). The UDP and Raw sockets
+   are open at this time, so if they are no serviced, they accumulate
+   large numbers of kernel-buffered packets, wasting unpageable
+   memory. The new code wake dhcpcd so it can discard any recieved data.
+	
 ** dhcpcd-2.0.1 Released
 
 21 Jan 2006; Roy Marples <uberlord@gentoo.org>:
