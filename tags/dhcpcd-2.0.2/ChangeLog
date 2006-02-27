@@ -1,3 +1,5 @@
+** dhcpcd-2.0.2 Released
+
 24 Feb 2006; Roy Marples <uberlord@gentoo.org>
 
     When a RFC violating space seperated domain name hits treat it like
