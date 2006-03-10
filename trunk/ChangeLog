@@ -1,3 +1,9 @@
+10 Mar 2006; Simon Kelley <simon@thekelleys.org.uk>
+
+    Fixed problems with previous changes to avoid buffer-fillage.
+    There were two problems: one with not checking for non-existance of
+    the UDP socket, and a second, a race between select() and sigalarm.
+    
 ** dhcpcd-2.0.2 Released
 
 24 Feb 2006; Roy Marples <uberlord@gentoo.org>
