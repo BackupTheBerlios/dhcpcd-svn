@@ -1127,7 +1127,6 @@ void (*buildDhcpMsg)(unsigned);
 /*****************************************************************************/
 void *dhcpBound()
 {
-  struct timeval t;
   int i, maxfd;
   fd_set rset;
   char foobuf[512];
@@ -1144,40 +1143,36 @@ void *dhcpBound()
      on hundreds of useless packets. 
 
      This code waits in the same way, but it wakes up and reads any unexpected
-     packets to free the buffers.
-
-     Note that this code is linux-specific, since it relies on select to 
-     update the timeval with the time remaining. 
+     packets to free the buffers. This waits "forever", and is 
+     interrupted by a siglongjump on receipt of sigalarm
   */
 
-  t.tv_sec = ntohl(*(u_int *)DhcpOptions.val[dhcpT1value]);
-  t.tv_usec = 0;
- 
- waitmore: 
-  FD_ZERO(&rset);
-  maxfd = dhcpSocket;
-  FD_SET(dhcpSocket, &rset);
-  if (udpFooSocket  != -1)
+  while(1) 
     {
-      if (udpFooSocket > maxfd)
-	maxfd = udpFooSocket;
-      FD_SET(udpFooSocket, &rset);
+      FD_ZERO(&rset);
+      maxfd = dhcpSocket;
+      FD_SET(dhcpSocket, &rset);
+      if (udpFooSocket  != -1)
+	{
+	  if (udpFooSocket > maxfd)
+	    maxfd = udpFooSocket;
+	  FD_SET(udpFooSocket, &rset);
+	}
+      
+      if (select(maxfd+1, &rset, NULL, NULL, NULL) == -1)
+	{
+	  if (errno != EINTR)
+	    return &dhcpRenew;
+	}
+      else
+	{
+	  if (udpFooSocket != -1 && FD_ISSET(udpFooSocket, &rset))
+	    while (recvfrom(udpFooSocket,(void *)foobuf,sizeof(foobuf),0,NULL,NULL) != -1 );
+	  
+	  if (FD_ISSET(dhcpSocket, &rset))
+	    while (recvfrom(dhcpSocket,(void *)foobuf,sizeof(foobuf),0,NULL,NULL) != -1 );
+	}
     }
-
-  if (select(maxfd+1, &rset, NULL, NULL, &t) != -1)
-    {
-      
-      if (FD_ISSET(udpFooSocket, &rset))
-	while (recvfrom(udpFooSocket,(void *)foobuf,sizeof(foobuf),0,NULL,NULL) != -1 );
-      
-      if (FD_ISSET(dhcpSocket, &rset))
-	while (recvfrom(dhcpSocket,(void *)foobuf,sizeof(foobuf),0,NULL,NULL) != -1 );
-      
-      if (t.tv_sec > 0)
-	goto waitmore;
-    }
-
-  return &dhcpRenew;
 }
 /*****************************************************************************/
 void *dhcpRenew()
