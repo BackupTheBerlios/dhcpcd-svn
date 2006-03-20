@@ -1,3 +1,8 @@
+20 Mar 2006; Roy Marples <uberlord@gentoo.org>
+
+   Accepted a patch from Beech Horn that fixed some issues when compiling
+   with the pedantic flag.
+
 ** dhcpcd-2.0.3 Released
 
 10 Mar 2006; Simon Kelley <simon@thekelleys.org.uk>

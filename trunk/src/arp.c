@@ -27,6 +27,7 @@
 #include <net/if_arp.h>
 #include <string.h>
 #include <syslog.h>
+#include <errno.h>
 #include "client.h"
 
 typedef struct arpMessage
@@ -191,7 +192,7 @@ int arpRelease()  /* sends UNARP message, cf. RFC1868 */
   if ( sendto(dhcpSocket,&ArpMsgSend,len,0,
 	      &addr,sizeof(struct sockaddr)) == -1 )
     {
-      syslog(LOG_ERR,"arpRelease: sendto: %m\n");
+      syslog(LOG_ERR,"arpRelease: sendto: %s\n",strerror(errno));
       return -1;
     }
   return 0;
@@ -227,7 +228,7 @@ int arpInform()
   if ( sendto(dhcpSocket,&ArpMsgSend,len,0,
 	      &addr,sizeof(struct sockaddr)) == -1 )
     {
-      syslog(LOG_ERR,"arpInform: sendto: %m\n");
+      syslog(LOG_ERR,"arpInform: sendto: %s\n",strerror(errno));
       return -1;
     }
   return 0;

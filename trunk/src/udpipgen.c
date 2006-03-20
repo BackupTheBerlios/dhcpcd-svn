@@ -50,10 +50,7 @@ int len;
   return ~sum;
 }
 /*****************************************************************************/
-void udpipgen(udpip,saddr,daddr,sport,dport,msglen)
-udpiphdr *udpip;
-unsigned int saddr,daddr;
-unsigned short sport,dport,msglen;
+void udpipgen(udpiphdr *udpip,unsigned int saddr,unsigned int daddr,unsigned short sport,unsigned short dport,unsigned short msglen)
 {
   /* Use local copy because udpip->ip is not aligned.  */
   struct ip ip_local;

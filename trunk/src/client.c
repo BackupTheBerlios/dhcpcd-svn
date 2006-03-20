@@ -521,7 +521,7 @@ UdpIpMsgRecv.ethhdr.ether_shost[5]);
 void classIDsetup()
 {
   struct utsname sname;
-  if ( uname(&sname) ) syslog(LOG_ERR,"classIDsetup: uname: %m\n");
+  if ( uname(&sname) ) syslog(LOG_ERR,"classIDsetup: uname: %s\n",strerror(errno));
   DhcpIface.class_len=snprintf(DhcpIface.class_id,CLASS_ID_MAX_LEN,
   "%s %s %s",sname.sysname,sname.release,sname.machine);
 }
@@ -713,7 +713,7 @@ void (*buildUdpIpMsg)(unsigned);
 	  if ( sendto(dhcpSocket,&UdpIpMsgSend,len,0,
 		&addr,sizeof(struct sockaddr)) == -1 )
 	    {
-	      syslog(LOG_ERR,"sendto: %m\n");
+	      syslog(LOG_ERR,"sendto: %s\n",strerror(errno));
 	      return -1;
 	    }
 	  gettimeofday(&begin, NULL);
@@ -730,7 +730,7 @@ void (*buildUdpIpMsg)(unsigned);
 		     (struct sockaddr *)&addr,&addrLength);
 	  if ( len == -1 )
     	    {
-      	      syslog(LOG_ERR,"recvfrom: %m\n");
+      	      syslog(LOG_ERR,"recvfrom: %s\n",strerror(errno));
       	      return -1;
     	    }
 	  if ( TokenRingIf )
@@ -847,13 +847,13 @@ void *dhcpStart()
       (flags = fcntl(dhcpSocket, F_GETFL, 0)) == -1 ||
       fcntl(dhcpSocket, F_SETFL, flags | O_NONBLOCK) == -1)
     {
-      syslog(LOG_ERR,"dhcpStart: socket: %m\n");
+      syslog(LOG_ERR,"dhcpStart: socket: %s\n",strerror(errno));
       exit(1);
     }
 
   if ( ioctl(dhcpSocket,SIOCGIFHWADDR,&ifr) )
     {
-      syslog(LOG_ERR,"dhcpStart: ioctl SIOCGIFHWADDR: %m\n");
+      syslog(LOG_ERR,"dhcpStart: ioctl SIOCGIFHWADDR: %s\n",strerror(errno));
       exit(1);
     }
   if ( ifr.ifr_hwaddr.sa_family != ARPHRD_ETHER && ifr.ifr_hwaddr.sa_family != ARPHRD_IEEE802_TR )
@@ -869,19 +869,19 @@ void *dhcpStart()
     }
   if ( setsockopt(dhcpSocket,SOL_SOCKET,SO_BROADCAST,&o,sizeof(o)) == -1 )
     {
-      syslog(LOG_ERR,"dhcpStart: setsockopt: %m\n");
+      syslog(LOG_ERR,"dhcpStart: setsockopt: %s\n",strerror(errno));
       exit(1);
     }
   if ( ioctl(dhcpSocket,SIOCGIFFLAGS,&ifr) )  
     {  
-      syslog(LOG_ERR,"dhcpStart: ioctl SIOCGIFFLAGS: %m\n");  
+      syslog(LOG_ERR,"dhcpStart: ioctl SIOCGIFFLAGS: %s\n",strerror(errno));  
       exit(1);  
     }  
   saved_if_flags = ifr.ifr_flags;  
   ifr.ifr_flags = saved_if_flags | IFF_UP | IFF_BROADCAST | IFF_NOTRAILERS | IFF_RUNNING;
   if ( ioctl(dhcpSocket,SIOCSIFFLAGS,&ifr) )
     {
-      syslog(LOG_ERR,"dhcpStart: ioctl SIOCSIFFLAGS: %m\n");
+      syslog(LOG_ERR,"dhcpStart: ioctl SIOCSIFFLAGS: %s\n",strerror(errno));
       exit(1);
     }
   memset(&sap,0,sizeof(sap));
@@ -896,7 +896,7 @@ void *dhcpStart()
 	ClientHwAddr[3],ClientHwAddr[4],ClientHwAddr[5]);
       if ( ioctl(dhcpSocket,SIOCGIFHWADDR,&ifr) )
         {
-	  syslog(LOG_ERR,"dhcpStart: ioctl SIOCGIFHWADDR: %m\n");
+	  syslog(LOG_ERR,"dhcpStart: ioctl SIOCGIFHWADDR: %s\n",strerror(errno));
 	  exit(1);
 	}
       if ( ifr.ifr_hwaddr.sa_family != ARPHRD_ETHER && ifr.ifr_hwaddr.sa_family != ARPHRD_IEEE802_TR )
@@ -906,13 +906,13 @@ void *dhcpStart()
 	}
       if ( setsockopt(dhcpSocket,SOL_SOCKET,SO_BROADCAST,&o,sizeof(o)) == -1 )
 	{
-	  syslog(LOG_ERR,"dhcpStart: setsockopt: %m\n");
+	  syslog(LOG_ERR,"dhcpStart: setsockopt: %s\n",strerror(errno));
 	  exit(1);
 	}
       ifr.ifr_flags = saved_if_flags | IFF_UP | IFF_BROADCAST | IFF_NOTRAILERS | IFF_RUNNING;
       if ( ioctl(dhcpSocket,SIOCSIFFLAGS,&ifr) )
 	{
-	  syslog(LOG_ERR,"dhcpStart: ioctl SIOCSIFFLAGS: %m\n");
+	  syslog(LOG_ERR,"dhcpStart: ioctl SIOCSIFFLAGS: %s\n",strerror(errno));
 	  exit(1);
 	}
       memset(&sap,0,sizeof(sap));
@@ -924,7 +924,7 @@ void *dhcpStart()
       sap.spkt_family = AF_PACKET;
 #endif
       if ( bind(dhcpSocket,(void*)&sap,sizeof(struct sockaddr)) == -1 )
-        syslog(LOG_ERR,"dhcpStart: bind: %m\n");
+        syslog(LOG_ERR,"dhcpStart: bind: %s\n",strerror(errno));
 
       memcpy(ClientHwAddr,ifr.ifr_hwaddr.sa_data,ETH_ALEN);
       if ( DebugFlag )
@@ -948,25 +948,25 @@ void *dhcpStart()
   udpFooSocket = socket(AF_INET,SOCK_DGRAM,0);
   if (udpFooSocket == -1)
     {
-      syslog(LOG_ERR,"dhcpStart: socket: %m\n");
+      syslog(LOG_ERR,"dhcpStart: socket: %s\n",strerror(errno));
       exit(1);
     }
   if ( setsockopt(udpFooSocket,SOL_SOCKET,SO_BROADCAST,&o,sizeof(o)) )
-    syslog(LOG_ERR,"dhcpStart: setsockopt: %m\n");
+    syslog(LOG_ERR,"dhcpStart: setsockopt: %s\n",strerror(errno));
   memset(&clientAddr.sin_addr,0,sizeof(&clientAddr.sin_addr));
   clientAddr.sin_family = AF_INET;
   clientAddr.sin_port = htons(DHCP_CLIENT_PORT);
   if ( bind(udpFooSocket,(struct sockaddr *)&clientAddr,sizeof(clientAddr)) )
     {
       if ( errno != EADDRINUSE )
-	syslog(LOG_ERR,"dhcpStart: bind: %m\n");
+	syslog(LOG_ERR,"dhcpStart: bind: %s\n",strerror(errno));
       close(udpFooSocket);
       udpFooSocket = -1;
     }
   else
     if ( fcntl(udpFooSocket,F_SETFL,O_NONBLOCK) == -1 )
       {
-	syslog(LOG_ERR,"dhcpStart: fcntl: %m\n");
+	syslog(LOG_ERR,"dhcpStart: fcntl: %s\n",strerror(errno));
 	exit(1);
       }
 
@@ -1261,7 +1261,7 @@ void *dhcpRelease()
   if ( sendto(dhcpSocket,&UdpIpMsgSend,sizeof(struct packed_ether_header)+
 	      sizeof(udpiphdr)+sizeof(dhcpMessage),0,
 	      &addr,sizeof(struct sockaddr)) == -1 )
-    syslog(LOG_ERR,"dhcpRelease: sendto: %m\n");
+    syslog(LOG_ERR,"dhcpRelease: sendto: %s\n",strerror(errno));
   arpRelease(); /* clear ARP cache entries for client IP addr */
   if ( SetHostName )
     {
@@ -1296,13 +1296,13 @@ void *dhcpStop()
   p->sin_addr.s_addr = 0;
 #ifndef OLD_LINUX_VERSION
   if ( ioctl(dhcpSocket,SIOCSIFADDR,&ifr) == -1 )
-    syslog(LOG_ERR,"dhcpStop: ioctl SIOCSIFADDR: %m\n");
+    syslog(LOG_ERR,"dhcpStop: ioctl SIOCSIFADDR: %s\n",strerror(errno));
 #endif
   if (DownIfaceOnStop)
     {
       ifr.ifr_flags = saved_if_flags & ~IFF_UP;
       if ( (IfName_len==IfNameExt_len) && ioctl(dhcpSocket,SIOCSIFFLAGS,&ifr) )
-        syslog(LOG_ERR,"dhcpStop: ioctl SIOCSIFFLAGS: %m\n");
+        syslog(LOG_ERR,"dhcpStop: ioctl SIOCSIFFLAGS: %s\n",strerror(errno));
     }
 tsc:
   close(dhcpSocket);
@@ -1333,7 +1333,7 @@ void *dhcpDecline()
   if ( sendto(dhcpSocket,&UdpIpMsgSend,sizeof(struct packed_ether_header)+
 	      sizeof(udpiphdr)+sizeof(dhcpMessage),0,
 	      &addr,sizeof(struct sockaddr)) == -1 )
-    syslog(LOG_ERR,"dhcpDecline: sendto: %m\n");
+    syslog(LOG_ERR,"dhcpDecline: sendto: %s\n",strerror(errno));
   return &dhcpInit;
 }
 #endif

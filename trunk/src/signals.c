@@ -30,6 +30,8 @@
 #include <signal.h>
 #include <setjmp.h>
 #include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 #include "pathnames.h"
 #include "client.h"
 
@@ -45,7 +47,7 @@ void killPid(sig)
 int sig;
 {
   FILE *fp;
-  pid_t pid;
+  unsigned int pid;
   char pidfile[64];
   snprintf(pidfile,sizeof(pidfile),PID_FILE_PATH,IfNameExt);
   fp=fopen(pidfile,"r");
@@ -69,7 +71,7 @@ void writePidFile(pid_t pid)
   fp=fopen(pidfile,"w");
   if ( fp == NULL )
     {
-      syslog(LOG_ERR,"writePidFile: fopen: %m\n");
+      syslog(LOG_ERR,"writePidFile: fopen: %s\n",strerror(errno));
       exit(1);
     }
   fprintf(fp,"%u\n",pid);

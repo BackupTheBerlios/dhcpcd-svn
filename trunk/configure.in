@@ -43,10 +43,7 @@ dnl
 dnl Add the -Wall flag if we're using GCC
 dnl
 if test "$GCC" = "yes"; then
-    case " ${CFLAGS} " in
-	*" -Wall ") ;;
-	*) CFLAGS="${CFLAGS} -Wall" ;;
-    esac
+    CFLAGS="${CFLAGS} -Wall"
 fi
 
 dnl

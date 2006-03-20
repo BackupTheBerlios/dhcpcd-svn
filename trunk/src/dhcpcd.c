@@ -431,12 +431,12 @@ usage:	    print_version();
   signalSetup();
   if ( mkdir(ConfigDir,S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH) && errno != EEXIST )
     {
-      syslog(LOG_ERR,"mkdir(\"%s\",0): %m\n",ConfigDir);
+      syslog(LOG_ERR,"mkdir(\"%s\",0): %s\n",ConfigDir,strerror(errno));
       exit(1);
     }
   if ( mkdir(etcDir,S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH) && errno != EEXIST )
     {
-      syslog(LOG_ERR,"mkdir(\"%s\",0): %m\n", etcDir);
+      syslog(LOG_ERR,"mkdir(\"%s\",0): %s\n",etcDir,strerror(errno));
       exit(1);
     }
   snprintf(resolv_file, sizeof(resolv_file), RESOLV_FILE, etcDir);

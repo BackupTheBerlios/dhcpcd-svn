@@ -131,8 +131,8 @@ char *prm;
         argc[3]=NULL;
       argc[4]=NULL;
       if ( execve(exec_on_change,argc,ProgramEnviron) && errno != ENOENT )
-	syslog(LOG_ERR,"error executing \"%s %s %s\": %m\n",
-	exec_on_change,hostinfo_file,prm);
+	syslog(LOG_ERR,"error executing \"%s %s %s\": %s\n",
+	exec_on_change,hostinfo_file,prm,strerror(errno));
       exit(0);
     }
 }
@@ -226,14 +226,14 @@ if ( ioctl(dhcpSocket,SIOCADDRT,&rtent) == -1 )
 	    rtent.rt_flags	=	RTF_UP|RTF_GATEWAY|(Window ? RTF_WINDOW : 0);
 	    if ( ioctl(dhcpSocket,SIOCADDRT,&rtent) == -1 )
 	      {
-		syslog(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %m\n");
+		syslog(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %s\n",strerror(errno));
 		return -1;
 	      }
 	  }
       }
     else
       {
-	syslog(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %m\n");
+	syslog(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %s\n",strerror(errno));
 	return -1;
       }
   }
@@ -276,7 +276,7 @@ int dhcpConfig()
   p->sin_addr.s_addr = DhcpIface.ciaddr;
   if ( ioctl(dhcpSocket,SIOCSIFADDR,&ifr) == -1 )  /* setting IP address */
     {
-      syslog(LOG_ERR,"dhcpConfig: ioctl SIOCSIFADDR: %m\n");
+      syslog(LOG_ERR,"dhcpConfig: ioctl SIOCSIFADDR: %s\n",strerror(errno));
       return -1;
     }
   memcpy(&p->sin_addr.s_addr,DhcpOptions.val[subnetMask],4);
@@ -285,13 +285,13 @@ int dhcpConfig()
       p->sin_addr.s_addr = 0xffffffff; /* try 255.255.255.255 */
       if ( ioctl(dhcpSocket,SIOCSIFNETMASK,&ifr) == -1 )
 	{
-	  syslog(LOG_ERR,"dhcpConfig: ioctl SIOCSIFNETMASK: %m\n");
+	  syslog(LOG_ERR,"dhcpConfig: ioctl SIOCSIFNETMASK: %s\n",strerror(errno));
 	  return -1;
 	}
     }
   memcpy(&p->sin_addr.s_addr,DhcpOptions.val[broadcastAddr],4);
   if ( ioctl(dhcpSocket,SIOCSIFBRDADDR,&ifr) == -1 ) /* setting broadcast address */
-    syslog(LOG_ERR,"dhcpConfig: ioctl SIOCSIFBRDADDR: %m\n");
+    syslog(LOG_ERR,"dhcpConfig: ioctl SIOCSIFBRDADDR: %s\n",strerror(errno));
 
   /* 
    * setting local route
@@ -313,7 +313,7 @@ int dhcpConfig()
   rtent.rt_metric     	=	1;
   rtent.rt_flags      	=	RTF_UP;
   if ( ioctl(dhcpSocket,SIOCDELRT,&rtent) )
-    syslog(LOG_ERR,"dhcpConfig: ioctl SIOCDELRT: %m\n");
+    syslog(LOG_ERR,"dhcpConfig: ioctl SIOCDELRT: %s\n",strerror(errno));
 #endif
   
   memset(&rtent,0,sizeof(struct rtentry));
@@ -331,7 +331,7 @@ int dhcpConfig()
   rtent.rt_metric     	=	RouteMetric;
   rtent.rt_flags      	=	RTF_UP;
   if ( ioctl(dhcpSocket,SIOCADDRT,&rtent) )
-    syslog(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %m\n");
+    syslog(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %s\n",strerror(errno));
 
   for (i=0;i<DhcpOptions.len[staticRoute];i+=8)
     {  /* setting static routes */
@@ -358,7 +358,7 @@ int dhcpConfig()
 #endif
       rtent.rt_metric     =	  RouteMetric;
       if ( ioctl(dhcpSocket,SIOCADDRT,&rtent) )
-	syslog(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %m\n");
+	syslog(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %s\n",strerror(errno));
     }
 
   if ( SetDHCPDefaultRoutes )
@@ -377,7 +377,7 @@ int dhcpConfig()
   sap.spkt_protocol = htons(ETH_P_ALL);
   memcpy(sap.spkt_device,IfName,IfName_len);
   if ( bind(dhcpSocket,(void*)&sap,sizeof(struct sockaddr)) == -1 )
-    syslog(LOG_ERR,"dhcpConfig: bind: %m\n");
+    syslog(LOG_ERR,"dhcpConfig: bind: %s\n",strerror(errno));
 #endif  
 
   arpInform();
@@ -415,7 +415,7 @@ int dhcpConfig()
 	  fclose(f);
 	}
       else
-	syslog(LOG_ERR,"dhcpConfig: fopen: %m\n");
+	syslog(LOG_ERR,"dhcpConfig: fopen: %s\n",strerror(errno));
 
    /* moved the next section of code from before to after we've created
     * resolv.conf. See below for explanation. <poeml@suse.de>
@@ -458,7 +458,7 @@ int dhcpConfig()
 	  if (prefix) free(prefix);
 	}
       else
-	syslog(LOG_ERR,"dhcpConfig: fopen: %m\n");
+	syslog(LOG_ERR,"dhcpConfig: fopen: %s\n",strerror(errno));
     }
   if ( ReplNTPConf && DhcpOptions.len[ntpServers]>=4 )
     {
@@ -493,7 +493,7 @@ int dhcpConfig()
  	  fclose(f);
  	}
        else
- 	syslog(LOG_ERR,"dhcpConfig: fopen: %m\n");
+ 	syslog(LOG_ERR,"dhcpConfig: fopen: %s\n",strerror(errno));
      }
   if ( SetHostName )
     {
@@ -602,7 +602,7 @@ tsc:
   if ( i == -1 ||
       write(i,(char *)&DhcpIface,sizeof(dhcpInterface)) == -1 ||
       close(i) == -1 )
-    syslog(LOG_ERR,"dhcpConfig: open/write/close: %m\n");
+    syslog(LOG_ERR,"dhcpConfig: open/write/close: %s\n",strerror(errno));
   snprintf(hostinfo_file,sizeof(hostinfo_file),DHCP_HOSTINFO,ConfigDir,IfNameExt);
   snprintf(hostinfo_file_old,sizeof(hostinfo_file_old),""DHCP_HOSTINFO".old",ConfigDir,IfNameExt);
   rename(hostinfo_file,hostinfo_file_old);
@@ -786,7 +786,7 @@ FQDNHOSTNAME='%s'\n",
       have_info = 1;
     }
   else
-    syslog(LOG_ERR,"dhcpConfig: fopen: %m\n");
+    syslog(LOG_ERR,"dhcpConfig: fopen: %s\n",strerror(errno));
 #if 0
   if ( Cfilename )
     if ( fork() == 0 )
@@ -795,8 +795,8 @@ FQDNHOSTNAME='%s'\n",
 	argc[0]=Cfilename;
 	argc[1]=NULL;
 	if ( execve(Cfilename,argc,ProgramEnviron) )
-	  syslog(LOG_ERR,"error executing \"%s\": %m\n",
-	  Cfilename);
+	  syslog(LOG_ERR,"error executing \"%s\": %s\n",
+	  Cfilename,strerror(errno));
 	exit(0);
       }
 #endif
