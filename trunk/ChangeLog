@@ -1,3 +1,7 @@
+22 Mar 2006; Roy Marples <uberlord@gentoo.org>
+
+   Native support for resolvconf added.
+
 20 Mar 2006; Roy Marples <uberlord@gentoo.org>
 
    Accepted a patch from Beech Horn that fixed some issues when compiling

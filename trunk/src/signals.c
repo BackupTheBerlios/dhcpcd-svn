@@ -47,7 +47,7 @@ void killPid(sig)
 int sig;
 {
   FILE *fp;
-  unsigned int pid;
+  pid_t pid;
   char pidfile[64];
   snprintf(pidfile,sizeof(pidfile),PID_FILE_PATH,IfNameExt);
   fp=fopen(pidfile,"r");

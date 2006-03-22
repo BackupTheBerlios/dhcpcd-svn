@@ -23,6 +23,7 @@
  */
 
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
@@ -1312,6 +1313,15 @@ tsc:
     rename(nis_file_sv, nis_file);
   if ( ntp_renamed )
     rename(ntp_file_sv, ntp_file);
+
+  struct stat buf;
+  if ( ! stat("/sbin/resolvconf", &buf) ) {
+      char *arg = malloc(strlen("/sbin/resolvconf -d  &>/dev/null ") + strlen(IfName) + 1);
+      snprintf(arg, strlen("/sbin/resolvconf -d  &>/dev/null ") + strlen(IfName) + 1,
+	      "/sbin/resolvconf -d %s &>/dev/null", IfName);
+      system(arg);
+      free(arg);
+  }
   execute_on_change("down");
   return &dhcpStart;
 }
