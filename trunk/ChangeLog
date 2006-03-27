@@ -1,3 +1,7 @@
+27 Mar 2006; Roy Marples <uberlord@gentoo.org>
+
+   Report which file is causing fopen to error.
+
 22 Mar 2006; Roy Marples <uberlord@gentoo.org>
 
    Native support for resolvconf added.

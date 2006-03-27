@@ -434,11 +434,11 @@ int dhcpConfig()
 	}
 	f=fdopen(pfd[1],"w");
         if ( !f )
-            syslog(LOG_ERR,"dhcpConfig: fdopen: %s\n", strerror(errno));
+            syslog(LOG_ERR,"dhcpConfig: fdopen /sbin/resolvconf: %s\n", strerror(errno));
       } else {
         f=fopen(resolv_file, "w");
         if ( !f )
-            syslog(LOG_ERR,"dhcpConfig: fopen: %s\n", strerror(errno));
+            syslog(LOG_ERR,"dhcpConfig: fopen %s: %s\n", resolv_file, strerror(errno));
       }
       if ( f ) 
 	{
@@ -503,7 +503,7 @@ int dhcpConfig()
 	  if (prefix) free(prefix);
 	}
       else
-	syslog(LOG_ERR,"dhcpConfig: fopen: %s\n",strerror(errno));
+	syslog(LOG_ERR,"dhcpConfig: fopen %s: %s\n", nis_file, strerror(errno));
     }
   if ( ReplNTPConf && DhcpOptions.len[ntpServers]>=4 )
     {
@@ -538,7 +538,7 @@ int dhcpConfig()
  	  fclose(f);
  	}
        else
- 	syslog(LOG_ERR,"dhcpConfig: fopen: %s\n",strerror(errno));
+ 	syslog(LOG_ERR,"dhcpConfig: fopen %s: %s\n", ntp_file, strerror(errno));
      }
   if ( SetHostName )
     {
