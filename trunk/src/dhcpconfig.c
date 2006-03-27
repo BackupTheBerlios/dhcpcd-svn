@@ -831,7 +831,7 @@ FQDNHOSTNAME='%s'\n",
       have_info = 1;
     }
   else
-    syslog(LOG_ERR,"dhcpConfig: fopen: %s\n",strerror(errno));
+    syslog(LOG_ERR,"dhcpConfig: fopen %s: %s\n", hostinfo_file, strerror(errno));
 #if 0
   if ( Cfilename )
     if ( fork() == 0 )
