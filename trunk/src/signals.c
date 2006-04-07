@@ -126,10 +126,10 @@ int sig;
 	}
 	syslog(LOG_ERR,"terminating on signal %d\n",sig);
     }
-  if (!Persistent || sig != SIGTERM)
+  if (!Persistent && sig != SIGTERM)
     dhcpStop();
   deletePidFile();
-  exit(sig);
+  exit(0);
 }
 /*****************************************************************************/
 void signalSetup()

@@ -26,7 +26,6 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
 #include <netinet/in.h>
 #include <net/route.h>
 #include <net/if.h>
@@ -115,10 +114,6 @@ char *prm;
     {
       char *argc[5],exec_on_change[128];
       
-      close(dhcpSocket);
-      if (udpFooSocket != -1)
-	close(udpFooSocket);
-
       if ( Cfilename )
 	snprintf(exec_on_change,sizeof(exec_on_change),Cfilename);
       else
@@ -395,46 +390,15 @@ int dhcpConfig()
 
       struct stat buf;
       int resolvconf = 0;
-      int pfd[2];
-      int resolvpid = 0;
       if ( ! stat("/sbin/resolvconf", &buf) ) {
         resolvconf = 1;
-	if ( pipe(pfd) < 0 ) {
-	  syslog(LOG_ERR,"dhcpConfig: pipe: %s", strerror(errno));
-	  return 1;
-	}
-	int sd = open("/dev/null", O_RDWR);
-#ifdef EMBED
-        if ( (resolvpid = vfork()) == 0 )
-#else
-        if ( (resolvpid = fork()) == 0 )
-#endif
-        {
-	    close(dhcpSocket);
-	    if (udpFooSocket != -1)
-		close(udpFooSocket);
-	    close(pfd[1]);
-	    if ( pfd[0] != STDIN_FILENO) {
-		dup2(pfd[0], STDIN_FILENO);
-		close(pfd[0]);
-	    }
-	    if ( sd ) {
-		dup2(sd, STDOUT_FILENO);
-		close(sd);
-	    }
-	    char *arg[3];
-	    arg[0] = "/sbin/resolvconf";
-	    arg[1] = "-a";
-	    arg[2] = IfName;
-	    arg[3] = NULL;
-	    if ( execv(arg[0], arg) && errno != ENOENT )
-		syslog(LOG_ERR,"dhcpConfig: error executing \"%s %s %s\": %s\n",
-			arg[0],arg[1],arg[2],strerror(errno));
-	    exit(1);
-	}
-	f=fdopen(pfd[1],"w");
+	char *arg = malloc(strlen("/sbin/resolvconf -a ")+strlen(IfName)+1);
+	snprintf(arg, strlen("/sbin/resolvconf -a ")+strlen(IfName)+1,
+	    "/sbin/resolvconf -a %s",IfName);
+	f=popen(arg,"w");
+	free(arg);
         if ( !f )
-            syslog(LOG_ERR,"dhcpConfig: fdopen /sbin/resolvconf: %s\n", strerror(errno));
+            syslog(LOG_ERR,"dhcpConfig: popen: %s\n", strerror(errno));
       } else {
         f=fopen(resolv_file, "w");
         if ( !f )
@@ -457,10 +421,11 @@ int dhcpConfig()
 	    ((unsigned char *)DhcpOptions.val[dns])[i+2],
 	    ((unsigned char *)DhcpOptions.val[dns])[i+3]);
 	
-	  fclose(f);
+	  if (resolvconf)
+	    pclose(f);
+	  else
+	    fclose(f);
 	}
-      if ( resolvpid )
-	  waitpid(resolvpid, NULL, 0);
 
    /* moved the next section of code from before to after we've created
     * resolv.conf. See below for explanation. <poeml@suse.de>

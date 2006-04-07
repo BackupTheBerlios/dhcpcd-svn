@@ -23,7 +23,6 @@
  */
 
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
@@ -852,6 +851,14 @@ void *dhcpStart()
       exit(1);
     }
 
+  /* Ensure that dhcpcd.exe does not inherit us */
+  if ((flags = fcntl(dhcpSocket, F_GETFD, 0)) < 0 ||
+      fcntl(dhcpSocket, F_SETFD, flags | FD_CLOEXEC) < 0)
+    {
+      syslog(LOG_ERR,"dhcpStart: fcntl: %s\n",strerror(errno));
+      exit(1);
+    }
+ 
   if ( ioctl(dhcpSocket,SIOCGIFHWADDR,&ifr) )
     {
       syslog(LOG_ERR,"dhcpStart: ioctl SIOCGIFHWADDR: %s\n",strerror(errno));
@@ -952,6 +959,15 @@ void *dhcpStart()
       syslog(LOG_ERR,"dhcpStart: socket: %s\n",strerror(errno));
       exit(1);
     }
+
+  /* Ensure that dhcpcd.exe does not inherit us */ 
+  if ((flags = fcntl(udpFooSocket, F_GETFD, 0)) < 0 ||
+      fcntl(udpFooSocket, F_SETFD, flags | FD_CLOEXEC) < 0)
+    {
+      syslog(LOG_ERR,"dhcpStart: fcntl: %s\n",strerror(errno));
+      exit(1);
+    }
+ 
   if ( setsockopt(udpFooSocket,SOL_SOCKET,SO_BROADCAST,&o,sizeof(o)) )
     syslog(LOG_ERR,"dhcpStart: setsockopt: %s\n",strerror(errno));
   memset(&clientAddr.sin_addr,0,sizeof(&clientAddr.sin_addr));
@@ -1284,7 +1300,8 @@ void *dhcpStop()
 {
   struct ifreq ifr;
   struct sockaddr_in	*p = (struct sockaddr_in *)&(ifr.ifr_addr);
-
+  struct stat buf;
+ 
   releaseDhcpOptions();
   if ( TestCase ) goto tsc;
   memset(&ifr,0,sizeof(struct ifreq));
@@ -1307,6 +1324,7 @@ void *dhcpStop()
     }
 tsc:
   close(dhcpSocket);
+  if (udpFooSocket != -1) close(udpFooSocket);
   if ( resolv_renamed )
     rename(resolv_file_sv, resolv_file);
   if ( yp_renamed )
@@ -1314,14 +1332,26 @@ tsc:
   if ( ntp_renamed )
     rename(ntp_file_sv, ntp_file);
 
-  struct stat buf;
-  if ( ! stat("/sbin/resolvconf", &buf) ) {
-      char *arg = malloc(strlen("/sbin/resolvconf -d  &>/dev/null ") + strlen(IfName) + 1);
-      snprintf(arg, strlen("/sbin/resolvconf -d  &>/dev/null ") + strlen(IfName) + 1,
-	      "/sbin/resolvconf -d %s &>/dev/null", IfName);
-      system(arg);
-      free(arg);
-  }
+  if ( ! stat("/sbin/resolvconf", &buf) )
+    {
+#ifdef EMBED
+      if ( vfork() == 0 )
+#else
+      if ( fork() == 0 )
+#endif
+        {
+          char *arg[4];
+          arg[0] = "/sbin/resolvconf";
+          arg[1] = "-d";
+          arg[2] = IfName;
+          arg[3] = NULL;
+          if ( execv(arg[0], arg) && errno != ENOENT )
+            syslog(LOG_ERR,"dhcpStop: error executing \"%s %s %s\": %s\n",
+              arg[0],arg[1],arg[2],strerror(errno));
+          exit(0);
+        }
+    }
+
   execute_on_change("down");
   return &dhcpStart;
 }

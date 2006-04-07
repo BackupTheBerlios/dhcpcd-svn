@@ -1,3 +1,8 @@
+07 Apr 2006; Roy Marples <uberlord@gentoo.org>
+
+   Remove klunky fd closing and replace with saner fnctl FD_CLOEXEC.
+   Don't call dhcpStop() if called with SIGTERM.
+
 27 Mar 2006; Roy Marples <uberlord@gentoo.org>
 
    Report which file is causing fopen to error.
