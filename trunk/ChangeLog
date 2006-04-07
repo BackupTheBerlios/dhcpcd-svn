@@ -1,3 +1,5 @@
+** dhcpcd-2.0.4 Released
+
 07 Apr 2006; Roy Marples <uberlord@gentoo.org>
 
    Remove klunky fd closing and replace with saner fnctl FD_CLOEXEC.
