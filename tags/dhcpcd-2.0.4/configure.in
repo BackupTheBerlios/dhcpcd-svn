@@ -1,7 +1,7 @@
 dnl
 dnl Change our version number here every time we release a new tarball
 dnl
-AC_INIT(dhcpcd, 2.0.5-pre)
+AC_INIT(dhcpcd, 2.0.4)
 AC_CONFIG_SRCDIR(src/dhcpcd.c)
 AC_CONFIG_FILES(Makefile src/Makefile)
 AC_CONFIG_HEADER(config.h)
