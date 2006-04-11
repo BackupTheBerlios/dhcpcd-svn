@@ -110,7 +110,10 @@ int sig;
 		  if ( currState == &dhcpReboot )
 		    siglongjmp(env,4);  /* failed to acquire the same IP address */
 		  else
-	            syslog(LOG_ERR,"timed out waiting for a valid DHCP server response\n");
+		    {
+	              syslog(LOG_ERR,"timed out waiting for a valid DHCP server response\n");
+		      fprintf(stderr,"timed out waiting for a valid DHCP server response\n");
+		    }
 		}
 	    }
         }

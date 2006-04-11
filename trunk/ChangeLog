@@ -2,7 +2,7 @@
 
    We now set hostname by default if current hostname is blank or (none)
    Exit with signal code again (do'h).
-   syslog now prints errors to stderr.
+   Report timeout messages to stderr. 
 
 ** dhcpcd-2.0.4 Released
 
