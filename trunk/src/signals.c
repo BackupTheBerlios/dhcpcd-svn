@@ -129,7 +129,7 @@ int sig;
   if (!Persistent && sig != SIGTERM)
     dhcpStop();
   deletePidFile();
-  exit(0);
+  exit(sig);
 }
 /*****************************************************************************/
 void signalSetup()

@@ -427,7 +427,7 @@ usage:	    print_version();
   if ( killFlag ) killPid(killFlag);
   if ( ! TestCase ) checkIfAlreadyRunning();
   if ( versionFlag ) print_version();
-  openlog(PACKAGE,LOG_PID|(DebugFlag?LOG_CONS:0),LOG_LOCAL0);
+  openlog(PACKAGE,LOG_PID|(DebugFlag?LOG_CONS:0)|LOG_PERROR,LOG_LOCAL0);
   signalSetup();
   if ( mkdir(ConfigDir,S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH) && errno != EEXIST )
     {
