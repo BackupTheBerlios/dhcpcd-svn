@@ -505,43 +505,39 @@ int dhcpConfig()
        else
  	syslog(LOG_ERR,"dhcpConfig: fopen %s: %s\n", ntp_file, strerror(errno));
      }
-  if ( SetHostName )
+  if ( ! DhcpOptions.len[hostName] )
     {
-      if ( ! DhcpOptions.len[hostName] )
-	{
-	  hp=gethostbyaddr((char *)&DhcpIface.ciaddr,
-	  sizeof(DhcpIface.ciaddr),AF_INET);
-	  if ( hp )
-	    {
-	      dname=hp->h_name;
-	      while ( *dname > 32 )
-#if 0
-		if ( *dname == '.' )
-		  break;
-		else
-#endif
-		  dname++;
-	      dname_len=dname-hp->h_name;
-	      DhcpOptions.val[hostName]=(char *)malloc(dname_len+1);
-	      DhcpOptions.len[hostName]=dname_len;
-	      memcpy((char *)DhcpOptions.val[hostName],
-	      hp->h_name,dname_len);
-	      ((char *)DhcpOptions.val[hostName])[dname_len]=0;
-	      DhcpOptions.num++;
-	    }
+      hp=gethostbyaddr((char *)&DhcpIface.ciaddr,
+      sizeof(DhcpIface.ciaddr),AF_INET);
+      if ( hp )
+        {
+	  dname=hp->h_name;
+	  while ( *dname > 32 )
+	    dname++;
+	  dname_len=dname-hp->h_name;
+	  DhcpOptions.val[hostName]=(char *)malloc(dname_len+1);
+	  DhcpOptions.len[hostName]=dname_len;
+	  memcpy((char *)DhcpOptions.val[hostName],
+	    hp->h_name,dname_len);
+	  ((char *)DhcpOptions.val[hostName])[dname_len]=0;
+	  DhcpOptions.num++;
 	}
-      if ( InitialHostName_len<0 && gethostname(InitialHostName,sizeof(InitialHostName))==0 )
-	{
-	  InitialHostName_len=strlen(InitialHostName);
-	  if ( DebugFlag )
-	    fprintf(stdout,"dhcpcd: orig hostname = %s\n",InitialHostName);
-	}
+    }
+  if ( InitialHostName_len<0)
+    {
+      gethostname(InitialHostName,sizeof(InitialHostName));
+      InitialHostName_len=strlen(InitialHostName);
+    }
+  if ( DebugFlag )
+    fprintf(stdout,"dhcpcd: orig hostname = %s\n",InitialHostName);
+  if ( SetHostName || InitialHostName_len == 0 || ! strcmp(InitialHostName, "(none)") )
+    {
       if ( DhcpOptions.len[hostName] )
         {
           sethostname(DhcpOptions.val[hostName],DhcpOptions.len[hostName]);
 	  if ( DebugFlag )
 	    fprintf(stdout,"dhcpcd: your hostname = %s\n",
-	    (char *)DhcpOptions.val[hostName]);
+	      (char *)DhcpOptions.val[hostName]);
 	}
     }
   if ( SetDomainName )

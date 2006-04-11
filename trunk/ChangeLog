@@ -1,5 +1,6 @@
 11 Apr 2006; Roy Marples <uberlord@gentoo.org>
 
+   We now set hostname by default if current hostname is blank or (none)
    Exit with signal code again (do'h).
    syslog now prints errors to stderr.
 
