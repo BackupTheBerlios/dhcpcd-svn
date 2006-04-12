@@ -1092,7 +1092,7 @@ void (*buildDhcpMsg)(unsigned);
 /* check if the offered IP address already in use */
   if ( arpCheck() )
     {
-      logger(LOG_DEBUG,
+      logger(LOG_ERR,
 	"requested %u.%u.%u.%u address is in use",
 	((unsigned char *)&DhcpIface.ciaddr)[0],
 	((unsigned char *)&DhcpIface.ciaddr)[1],
@@ -1102,7 +1102,7 @@ void (*buildDhcpMsg)(unsigned);
       DhcpIface.ciaddr = 0;
       return &dhcpInit;
     }
-  logger(LOG_DEBUG,
+  logger(LOG_INFO,
     "verified %u.%u.%u.%u address is not in use",
     ((unsigned char *)&DhcpIface.ciaddr)[0],
     ((unsigned char *)&DhcpIface.ciaddr)[1],
@@ -1426,7 +1426,7 @@ void *dhcpInform()
 /* check if the offered IP address already in use */
   if ( arpCheck() )
     {
-      logger(LOG_DEBUG,
+      logger(LOG_ERR,
 	"requested %u.%u.%u.%u address is in use",
 	((unsigned char *)&DhcpIface.ciaddr)[0],
 	((unsigned char *)&DhcpIface.ciaddr)[1],
@@ -1435,7 +1435,7 @@ void *dhcpInform()
       dhcpDecline();
       return 0;
     }
-  logger(LOG_DEBUG,
+  logger(LOG_INFO,
     "verified %u.%u.%u.%u address is not in use",
     ((unsigned char *)&DhcpIface.ciaddr)[0],
     ((unsigned char *)&DhcpIface.ciaddr)[1],
