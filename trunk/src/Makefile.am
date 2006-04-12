@@ -8,6 +8,7 @@ sbin_PROGRAMS		= dhcpcd
 
 dhcpcd_SOURCES		=	\
 	logger.c		\
+	logger.h		\
 	peekfd.c		\
 	udpipgen.c		\
 	buildmsg.c		\
