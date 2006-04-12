@@ -130,7 +130,7 @@ int arpCheck()
 	    }
       	  else
 	    continue;
-      	  if ( memcmp(ArpMsgRecv.tHaddr,ClientHwAddr,ETH_ALEN) )
+	  if ( memcmp(ArpMsgRecv.tHaddr,ClientHwAddr,ETH_ALEN) )
 	    {
 	    	logger(LOG_DEBUG,
 	    	"target hardware address mismatch: %02X.%02X.%02X.%02X.%02X.%02X received, %02X.%02X.%02X.%02X.%02X.%02X expected",
@@ -139,7 +139,7 @@ int arpCheck()
 	    	ClientHwAddr[0],ClientHwAddr[1],
 	        ClientHwAddr[2],ClientHwAddr[3],
 		ClientHwAddr[4],ClientHwAddr[5]);
-	      continue;
+	      // continue;
 	    }
       	  if ( memcmp(&ArpMsgRecv.sInaddr,&DhcpIface.ciaddr,4) )
 	    {
