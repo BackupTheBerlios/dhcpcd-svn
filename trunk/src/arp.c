@@ -26,9 +26,9 @@
 #include <netinet/in.h>
 #include <net/if_arp.h>
 #include <string.h>
-#include <syslog.h>
 #include <errno.h>
 #include "client.h"
+#include "logger.h"
 
 typedef struct arpMessage
 {
@@ -49,7 +49,6 @@ typedef struct arpMessage
 
 extern	char		*IfName;
 extern	int		IfName_len;
-extern	int		DebugFlag;
 extern	int		dhcpSocket;
 extern	int		TokenRingIf;
 extern	dhcpInterface	DhcpIface;
@@ -65,7 +64,8 @@ int arpCheck()
 {
   arpMessage ArpMsgSend,ArpMsgRecv;
   struct sockaddr addr;
-  int j,i=0,len=0;
+  socklen_t slen;
+  int i=0,len=0;
 
   memset(&ArpMsgSend,0,sizeof(arpMessage));
   memcpy(ArpMsgSend.ethhdr.ether_dhost,MAC_BCAST_ADDR,ETH_ALEN);
@@ -80,8 +80,8 @@ int arpCheck()
   memcpy(ArpMsgSend.sHaddr,ClientHwAddr,ETH_ALEN);
   memcpy(&ArpMsgSend.tInaddr,&DhcpIface.ciaddr,4);
 
-  if ( DebugFlag ) syslog(LOG_DEBUG,
-    "broadcasting ARPOP_REQUEST for %u.%u.%u.%u\n",
+  logger(LOG_DEBUG,
+    "broadcasting ARPOP_REQUEST for %u.%u.%u.%u",
     ArpMsgSend.tInaddr[0],ArpMsgSend.tInaddr[1],
     ArpMsgSend.tInaddr[2],ArpMsgSend.tInaddr[3]);
   do
@@ -98,7 +98,7 @@ int arpCheck()
 	  if ( sendto(dhcpSocket,&ArpMsgSend,len,0,
 		&addr,sizeof(struct sockaddr)) == -1 )
 	    {
-	      syslog(LOG_ERR,"arpCheck: sendto: %m\n");
+	      logger(LOG_ERR, "arpCheck: sendto: %m");
 	      return -1;
 	    }
     	}
@@ -106,11 +106,11 @@ int arpCheck()
       do
     	{
       	  memset(&ArpMsgRecv,0,sizeof(arpMessage));
-      	  j=sizeof(struct sockaddr);
+      	  slen = sizeof(struct sockaddr);
       	  if ( recvfrom(dhcpSocket,&ArpMsgRecv,sizeof(arpMessage),0,
-		    (struct sockaddr *)&addr,&j) == -1 )
+		    (struct sockaddr *)&addr, &slen) == -1 )
     	    {
-      	      syslog(LOG_ERR,"arpCheck: recvfrom: %m\n");
+      	      logger(LOG_ERR, "arpCheck: recvfrom: %m");
       	      return -1;
     	    }
 	  if ( TokenRingIf )
@@ -121,8 +121,8 @@ int arpCheck()
 	    continue;
       	  if ( ArpMsgRecv.operation == htons(ARPOP_REPLY) )
 	    {
-	      if ( DebugFlag ) syslog(LOG_DEBUG,
-	      "ARPOP_REPLY received from %u.%u.%u.%u for %u.%u.%u.%u\n",
+	      logger(LOG_DEBUG,
+	      "ARPOP_REPLY received from %u.%u.%u.%u for %u.%u.%u.%u",
 	      ArpMsgRecv.sInaddr[0],ArpMsgRecv.sInaddr[1],
 	      ArpMsgRecv.sInaddr[2],ArpMsgRecv.sInaddr[3],
 	      ArpMsgRecv.tInaddr[0],ArpMsgRecv.tInaddr[1],
@@ -132,9 +132,8 @@ int arpCheck()
 	    continue;
       	  if ( memcmp(ArpMsgRecv.tHaddr,ClientHwAddr,ETH_ALEN) )
 	    {
-	      if ( DebugFlag )
-	    	syslog(LOG_DEBUG,
-	    	"target hardware address mismatch: %02X.%02X.%02X.%02X.%02X.%02X received, %02X.%02X.%02X.%02X.%02X.%02X expected\n",
+	    	logger(LOG_DEBUG,
+	    	"target hardware address mismatch: %02X.%02X.%02X.%02X.%02X.%02X received, %02X.%02X.%02X.%02X.%02X.%02X expected",
 	    	ArpMsgRecv.tHaddr[0],ArpMsgRecv.tHaddr[1],ArpMsgRecv.tHaddr[2],
 	    	ArpMsgRecv.tHaddr[3],ArpMsgRecv.tHaddr[4],ArpMsgRecv.tHaddr[5],
 	    	ClientHwAddr[0],ClientHwAddr[1],
@@ -144,9 +143,8 @@ int arpCheck()
 	    }
       	  if ( memcmp(&ArpMsgRecv.sInaddr,&DhcpIface.ciaddr,4) )
 	    {
-	      if ( DebugFlag )
-	    	syslog(LOG_DEBUG,
-	    	"sender IP address mismatch: %u.%u.%u.%u received, %u.%u.%u.%u expected\n",
+	      logger(LOG_DEBUG,
+	    	"sender IP address mismatch: %u.%u.%u.%u received, %u.%u.%u.%u expected",
 	    	ArpMsgRecv.sInaddr[0],ArpMsgRecv.sInaddr[1],ArpMsgRecv.sInaddr[2],ArpMsgRecv.sInaddr[3],
 	    	((unsigned char *)&DhcpIface.ciaddr)[0],
 	    	((unsigned char *)&DhcpIface.ciaddr)[1],
@@ -192,7 +190,7 @@ int arpRelease()  /* sends UNARP message, cf. RFC1868 */
   if ( sendto(dhcpSocket,&ArpMsgSend,len,0,
 	      &addr,sizeof(struct sockaddr)) == -1 )
     {
-      syslog(LOG_ERR,"arpRelease: sendto: %s\n",strerror(errno));
+      logger(LOG_ERR, "arpRelease: sendto: %s", strerror(errno));
       return -1;
     }
   return 0;
@@ -228,7 +226,7 @@ int arpInform()
   if ( sendto(dhcpSocket,&ArpMsgSend,len,0,
 	      &addr,sizeof(struct sockaddr)) == -1 )
     {
-      syslog(LOG_ERR,"arpInform: sendto: %s\n",strerror(errno));
+      logger(LOG_ERR, "arpInform: sendto: %s", strerror(errno));
       return -1;
     }
   return 0;

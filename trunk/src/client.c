@@ -41,7 +41,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <syslog.h>
 #include <errno.h>
 #include <setjmp.h>
 #include <time.h>
@@ -50,6 +49,7 @@
 #include "udpipgen.h"
 #include "pathnames.h"
 #include "kversion.h"
+#include "logger.h"
 
 extern	char		*ProgramName;
 extern	char		*IfName,*IfNameExt;
@@ -59,7 +59,6 @@ extern	unsigned char	*ClassID;
 extern	int		ClassID_len;
 extern  unsigned char	*ClientID;
 extern  int		ClientID_len;
-extern	int		DebugFlag;
 extern	int		BeRFC1541;
 extern	unsigned	LeaseTime;
 extern	int		SetDomainName;
@@ -99,6 +98,8 @@ int	dhcpConfig();
 int	readDhcpCache();
 int	deleteDhcpCache();
 void	execute_on_change(char *prm);
+
+int	execOnStop	= 1;
 
 int			dhcpSocket;
 int			udpFooSocket;
@@ -329,9 +330,8 @@ UdpIpMsgRecv.ethhdr.ether_shost[5]);
       memcpy(DhcpOptions.val[dhcpServerIdentifier],&ipRecv->ip_src.s_addr,4);
       DhcpOptions.len[dhcpServerIdentifier] = 4;
       DhcpOptions.num++;
-      if ( DebugFlag )
-	syslog(LOG_DEBUG,
-	"dhcpServerIdentifier option is missing in DHCP server response. Assuming %u.%u.%u.%u\n",
+      logger(LOG_DEBUG,
+	"dhcpServerIdentifier option is missing in DHCP server response. Assuming %u.%u.%u.%u",
 	((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[0],
 	((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[1],
 	((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[2],
@@ -343,9 +343,8 @@ UdpIpMsgRecv.ethhdr.ether_shost[5]);
       memcpy(DhcpOptions.val[dns],DhcpOptions.val[dhcpServerIdentifier],4);
       DhcpOptions.len[dns] = 4;
       DhcpOptions.num++;
-      if ( DebugFlag )
-	syslog(LOG_DEBUG,
-	"dns option is missing in DHCP server response. Assuming %u.%u.%u.%u\n",
+      logger(LOG_DEBUG,
+	"dns option is missing in DHCP server response. Assuming %u.%u.%u.%u",
 	((unsigned char *)DhcpOptions.val[dns])[0],
 	((unsigned char *)DhcpOptions.val[dns])[1],
 	((unsigned char *)DhcpOptions.val[dns])[2],
@@ -388,9 +387,8 @@ UdpIpMsgRecv.ethhdr.ether_shost[5]);
 	}
       DhcpOptions.len[subnetMask] = 4;
       DhcpOptions.num++;
-      if ( DebugFlag )
-	syslog(LOG_DEBUG,
-	"subnetMask option is missing in DHCP server response. Assuming %u.%u.%u.%u\n",
+      logger(LOG_DEBUG,
+	"subnetMask option is missing in DHCP server response. Assuming %u.%u.%u.%u",
 	((unsigned char *)DhcpOptions.val[subnetMask])[0],
 	((unsigned char *)DhcpOptions.val[subnetMask])[1],
 	((unsigned char *)DhcpOptions.val[subnetMask])[2],
@@ -403,9 +401,8 @@ UdpIpMsgRecv.ethhdr.ether_shost[5]);
       memcpy(DhcpOptions.val[broadcastAddr],&br,4);
       DhcpOptions.len[broadcastAddr] = 4;
       DhcpOptions.num++;
-      if ( DebugFlag )
-	syslog(LOG_DEBUG,
-	"broadcastAddr option is missing in DHCP server response. Assuming %u.%u.%u.%u\n",
+      logger(LOG_DEBUG,
+	"broadcastAddr option is missing in DHCP server response. Assuming %u.%u.%u.%u",
 	((unsigned char *)DhcpOptions.val[broadcastAddr])[0],
 	((unsigned char *)DhcpOptions.val[broadcastAddr])[1],
 	((unsigned char *)DhcpOptions.val[broadcastAddr])[2],
@@ -421,9 +418,8 @@ UdpIpMsgRecv.ethhdr.ether_shost[5]);
 	memcpy(DhcpOptions.val[routersOnSubnet],DhcpOptions.val[dhcpServerIdentifier],4);
       DhcpOptions.len[routersOnSubnet] = 4;
       DhcpOptions.num++;
-      if ( DebugFlag )
-	syslog(LOG_DEBUG,
-	"routersOnSubnet option is missing in DHCP server response. Assuming %u.%u.%u.%u\n",
+      slogger(LOG_DEBUG,
+	"routersOnSubnet option is missing in DHCP server response. Assuming %u.%u.%u.%u",
 	((unsigned char *)DhcpOptions.val[routersOnSubnet])[0],
 	((unsigned char *)DhcpOptions.val[routersOnSubnet])[1],
 	((unsigned char *)DhcpOptions.val[routersOnSubnet])[2],
@@ -435,12 +431,10 @@ UdpIpMsgRecv.ethhdr.ether_shost[5]);
       if ( *(unsigned int *)DhcpOptions.val[dhcpIPaddrLeaseTime] == 0 )
 	{
           memcpy(DhcpOptions.val[dhcpIPaddrLeaseTime],&nleaseTime,4);
-	  if ( DebugFlag )
-	    syslog(LOG_DEBUG,"dhcpIPaddrLeaseTime=0 in DHCP server response. Assuming %u sec\n",LeaseTime);
+	  logger(LOG_DEBUG,"dhcpIPaddrLeaseTime=0 in DHCP server response. Assuming %u sec",LeaseTime);
 	}
       else
-	if ( DebugFlag )
-	  syslog(LOG_DEBUG,"dhcpIPaddrLeaseTime=%u in DHCP server response.\n",
+	logger(LOG_DEBUG,"dhcpIPaddrLeaseTime=%u in DHCP server response.",
 	  ntohl(*(unsigned int *)DhcpOptions.val[dhcpIPaddrLeaseTime]));
     }
   else /* did not get dhcpIPaddrLeaseTime */
@@ -449,8 +443,7 @@ UdpIpMsgRecv.ethhdr.ether_shost[5]);
       memcpy(DhcpOptions.val[dhcpIPaddrLeaseTime],&nleaseTime,4);
       DhcpOptions.len[dhcpIPaddrLeaseTime] = 4;
       DhcpOptions.num++;
-      if ( DebugFlag )
-	syslog(LOG_DEBUG,"dhcpIPaddrLeaseTime option is missing in DHCP server response. Assuming %u sec\n",LeaseTime);
+      logger(LOG_DEBUG, "dhcpIPaddrLeaseTime option is missing in DHCP server response. Assuming %u sec",LeaseTime);
     }
   if ( DhcpOptions.val[dhcpT1value] && DhcpOptions.len[dhcpT1value] == 4 )
     {
@@ -460,8 +453,7 @@ UdpIpMsgRecv.ethhdr.ether_shost[5]);
 	  int t1 = htonl(t2);
 	  memcpy(DhcpOptions.val[dhcpT1value],&t1,4);
 	  DhcpOptions.len[dhcpT1value] = 4;
-	  if ( DebugFlag )
-	    syslog(LOG_DEBUG,"dhcpT1value is missing in DHCP server response. Assuming %u sec\n",t2);
+	  logger(LOG_DEBUG,"dhcpT1value is missing in DHCP server response. Assuming %u sec",t2);
 	}
     }
   else		/* did not get T1 */
@@ -472,8 +464,7 @@ UdpIpMsgRecv.ethhdr.ether_shost[5]);
       memcpy(DhcpOptions.val[dhcpT1value],&t1,4);
       DhcpOptions.len[dhcpT1value] = 4;
       DhcpOptions.num++;
-      if ( DebugFlag )
-	syslog(LOG_DEBUG,"dhcpT1value is missing in DHCP server response. Assuming %u sec\n",t2);
+      logger(LOG_DEBUG,"dhcpT1value is missing in DHCP server response. Assuming %u sec",t2);
     }
   if ( DhcpOptions.val[dhcpT2value] && DhcpOptions.len[dhcpT2value] == 4 )
     {
@@ -483,8 +474,7 @@ UdpIpMsgRecv.ethhdr.ether_shost[5]);
 	  int t1 = htonl(t2);
 	  memcpy(DhcpOptions.val[dhcpT2value],&t1,4);
 	  DhcpOptions.len[dhcpT2value] = 4;
-	  if ( DebugFlag )
-	    syslog(LOG_DEBUG,"dhcpT2value is missing in DHCP server response. Assuming %u sec\n",t2);
+	  logger(LOG_DEBUG,"dhcpT2value is missing in DHCP server response. Assuming %u sec",t2);
 	}
     }
   else		/* did not get T2 */
@@ -495,12 +485,11 @@ UdpIpMsgRecv.ethhdr.ether_shost[5]);
       memcpy(DhcpOptions.val[dhcpT2value],&t1,4);
       DhcpOptions.len[dhcpT2value] = 4;
       DhcpOptions.num++;
-      if ( DebugFlag )
-	syslog(LOG_DEBUG,"dhcpT2value is missing in DHCP server response. Assuming %u sec\n",t2);
+      logger(LOG_DEBUG,"dhcpT2value is missing in DHCP server response. Assuming %u sec",t2);
     }
   if ( DhcpOptions.val[dhcpFQDNHostName] )
     {
-      syslog(LOG_DEBUG,"dhcpFQDNHostName response flags = %02X  rcode1 = %02X  rcode2 = %02X  name = \"%s\"\n",
+      logger(LOG_DEBUG,"dhcpFQDNHostName response flags = %02X  rcode1 = %02X  rcode2 = %02X  name = \"%s\"",
 	((unsigned char *)DhcpOptions.val[dhcpFQDNHostName])[0],
 	((unsigned char *)DhcpOptions.val[dhcpFQDNHostName])[1],
 	((unsigned char *)DhcpOptions.val[dhcpFQDNHostName])[2],
@@ -508,10 +497,8 @@ UdpIpMsgRecv.ethhdr.ether_shost[5]);
     }
   else
     {
-      if ( DebugFlag && (SetFQDNHostName != FQDNdisable) )
-        {
-	  syslog(LOG_DEBUG,"dhcpFQDNHostName is missing in DHCP server response.\n");
-	}
+      if ( SetFQDNHostName != FQDNdisable )
+	logger(LOG_DEBUG,"dhcpFQDNHostName is missing in DHCP server response.");
     }
   if ( DhcpOptions.val[dhcpMessageType] )
     return *(unsigned char *)DhcpOptions.val[dhcpMessageType];
@@ -521,7 +508,7 @@ UdpIpMsgRecv.ethhdr.ether_shost[5]);
 void classIDsetup()
 {
   struct utsname sname;
-  if ( uname(&sname) ) syslog(LOG_ERR,"classIDsetup: uname: %s\n",strerror(errno));
+  if ( uname(&sname) ) logger(LOG_ERR,"classIDsetup: uname: %s",strerror(errno));
   DhcpIface.class_len=snprintf(DhcpIface.class_id,CLASS_ID_MAX_LEN,
   "%s %s %s",sname.sysname,sname.release,sname.machine);
 }
@@ -713,7 +700,7 @@ void (*buildUdpIpMsg)(unsigned);
 	  if ( sendto(dhcpSocket,&UdpIpMsgSend,len,0,
 		&addr,sizeof(struct sockaddr)) == -1 )
 	    {
-	      syslog(LOG_ERR,"sendto: %s\n",strerror(errno));
+	      logger(LOG_ERR,"sendto: %s",strerror(errno));
 	      return -1;
 	    }
 	  gettimeofday(&begin, NULL);
@@ -730,7 +717,7 @@ void (*buildUdpIpMsg)(unsigned);
 		     (struct sockaddr *)&addr,&addrLength);
 	  if ( len == -1 )
     	    {
-      	      syslog(LOG_ERR,"recvfrom: %s\n",strerror(errno));
+      	      logger(LOG_ERR,"recvfrom: %s",strerror(errno));
       	      return -1;
     	    }
 	  if ( TokenRingIf )
@@ -762,8 +749,8 @@ void (*buildUdpIpMsg)(unsigned);
 	  i=(int )ntohs(ipRecv_local.ip_len);
 	  if ( len < i )
 	    {
-	      if ( DebugFlag ) syslog(LOG_DEBUG,
-		"corrupted IP packet of size=%d and ip_len=%d discarded\n",
+	      logger(LOG_DEBUG,
+		"corrupted IP packet of size=%d and ip_len=%d discarded",
 		len,i);
 	      continue;
 	    }
@@ -771,8 +758,8 @@ void (*buildUdpIpMsg)(unsigned);
 	  i=(int )ntohs(udpRecv->uh_ulen);
 	  if ( len < i )
 	    {
-	      if ( DebugFlag ) syslog(LOG_DEBUG,
-		"corrupted UDP msg of size=%d and uh_ulen=%d discarded\n",
+	      logger(LOG_DEBUG,
+		"corrupted UDP msg of size=%d and uh_ulen=%d discarded",
 		len,i);
 	      continue;
 	    }
@@ -781,18 +768,17 @@ void (*buildUdpIpMsg)(unsigned);
 	      len=udpipchk((udpiphdr *)tmp_ip);
 	      if ( len )
 		{
-		  if ( DebugFlag )
-		    switch ( len )
-		      {
-			case -1: syslog(LOG_DEBUG,
-			  "corrupted IP packet with ip_len=%d discarded\n",
-			  (int )ntohs(ipRecv_local.ip_len));
-			  break;
-			case -2: syslog(LOG_DEBUG,
-			  "corrupted UDP msg with uh_ulen=%d discarded\n",
-			  (int )ntohs(udpRecv->uh_ulen));
+		  switch ( len )
+		    {
+		      case -1: logger(LOG_DEBUG,
+			"corrupted IP packet with ip_len=%d discarded",
+			(int )ntohs(ipRecv_local.ip_len));
 			break;
-		      }
+		      case -2: logger(LOG_DEBUG,
+			"corrupted UDP msg with uh_ulen=%d discarded",
+			(int )ntohs(udpRecv->uh_ulen));
+			break;
+		    }
 		  continue;
 		}
 	    }
@@ -801,8 +787,7 @@ void (*buildUdpIpMsg)(unsigned);
 	  if (	DhcpMsgRecv->htype != ARPHRD_ETHER &&
 		DhcpMsgRecv->htype != (char)ARPHRD_IEEE802_TR )
 	    {
-	        if ( DebugFlag )
-		  syslog(LOG_DEBUG,"wrong msg htype 0x%X discarded\n",DhcpMsgRecv->htype);
+		logger(LOG_DEBUG,"wrong msg htype 0x%X discarded",DhcpMsgRecv->htype);
 		continue;
 	    }
 	  if ( DhcpMsgRecv->op != DHCP_BOOTREPLY ) continue;
@@ -813,12 +798,12 @@ void (*buildUdpIpMsg)(unsigned);
 	  if ( *(unsigned char *)DhcpOptions.val[dhcpMessageType] == DHCP_NAK )
 	    {
 	      if ( DhcpOptions.val[dhcpMsg] )
-		syslog(LOG_ERR,
-		"DHCP_NAK server response received: %s\n",
+		logger(LOG_ERR,
+		"DHCP_NAK server response received: %s",
 		(char *)DhcpOptions.val[dhcpMsg]);
 	      else
-		syslog(LOG_ERR,
-		"DHCP_NAK server response received\n");
+		logger(LOG_ERR,
+		"DHCP_NAK server response received");
 	      return 1;
 	    }
     	}
@@ -847,7 +832,7 @@ void *dhcpStart()
       (flags = fcntl(dhcpSocket, F_GETFL, 0)) == -1 ||
       fcntl(dhcpSocket, F_SETFL, flags | O_NONBLOCK) == -1)
     {
-      syslog(LOG_ERR,"dhcpStart: socket: %s\n",strerror(errno));
+      logger(LOG_ERR,"dhcpStart: socket: %s",strerror(errno));
       exit(1);
     }
 
@@ -855,41 +840,40 @@ void *dhcpStart()
   if ((flags = fcntl(dhcpSocket, F_GETFD, 0)) < 0 ||
       fcntl(dhcpSocket, F_SETFD, flags | FD_CLOEXEC) < 0)
     {
-      syslog(LOG_ERR,"dhcpStart: fcntl: %s\n",strerror(errno));
+      logger(LOG_ERR,"dhcpStart: fcntl: %s",strerror(errno));
       exit(1);
     }
  
   if ( ioctl(dhcpSocket,SIOCGIFHWADDR,&ifr) )
     {
-      syslog(LOG_ERR,"dhcpStart: ioctl SIOCGIFHWADDR: %s\n",strerror(errno));
+      logger(LOG_ERR,"dhcpStart: ioctl SIOCGIFHWADDR: %s",strerror(errno));
       exit(1);
     }
   if ( ifr.ifr_hwaddr.sa_family != ARPHRD_ETHER && ifr.ifr_hwaddr.sa_family != ARPHRD_IEEE802_TR )
     {
-      syslog(LOG_ERR,"dhcpStart: interface %s is not Ethernet or 802.2 Token Ring\n",ifr.ifr_name);
+      logger(LOG_ERR,"dhcpStart: interface %s is not Ethernet or 802.2 Token Ring\n",ifr.ifr_name);
       exit(1);
     }
   if ( ifr.ifr_hwaddr.sa_family == ARPHRD_IEEE802_TR )
     {
       TokenRingIf = 1;
-      if ( DebugFlag )
-	syslog(LOG_DEBUG,"found NIC of link layer type %d\n",ifr.ifr_hwaddr.sa_family);
+      logger(LOG_DEBUG,"found NIC of link layer type %d",ifr.ifr_hwaddr.sa_family);
     }
   if ( setsockopt(dhcpSocket,SOL_SOCKET,SO_BROADCAST,&o,sizeof(o)) == -1 )
     {
-      syslog(LOG_ERR,"dhcpStart: setsockopt: %s\n",strerror(errno));
+      logger(LOG_ERR,"dhcpStart: setsockopt: %s",strerror(errno));
       exit(1);
     }
   if ( ioctl(dhcpSocket,SIOCGIFFLAGS,&ifr) )  
     {  
-      syslog(LOG_ERR,"dhcpStart: ioctl SIOCGIFFLAGS: %s\n",strerror(errno));  
+      logger(LOG_ERR,"dhcpStart: ioctl SIOCGIFFLAGS: %s",strerror(errno)); 
       exit(1);  
     }  
   saved_if_flags = ifr.ifr_flags;  
   ifr.ifr_flags = saved_if_flags | IFF_UP | IFF_BROADCAST | IFF_NOTRAILERS | IFF_RUNNING;
   if ( ioctl(dhcpSocket,SIOCSIFFLAGS,&ifr) )
     {
-      syslog(LOG_ERR,"dhcpStart: ioctl SIOCSIFFLAGS: %s\n",strerror(errno));
+      logger(LOG_ERR,"dhcpStart: ioctl SIOCSIFFLAGS: %s",strerror(errno));
       exit(1);
     }
   memset(&sap,0,sizeof(sap));
@@ -898,29 +882,29 @@ void *dhcpStart()
     {
       i++;
       if ( i>1 )
-	syslog(LOG_WARNING,"dhcpStart: retrying MAC address request "
+	logger(LOG_WARNING,"dhcpStart: retrying MAC address request "
 	"(returned %02x:%02x:%02x:%02x:%02x:%02x)",
 	ClientHwAddr[0],ClientHwAddr[1],ClientHwAddr[2],
 	ClientHwAddr[3],ClientHwAddr[4],ClientHwAddr[5]);
       if ( ioctl(dhcpSocket,SIOCGIFHWADDR,&ifr) )
         {
-	  syslog(LOG_ERR,"dhcpStart: ioctl SIOCGIFHWADDR: %s\n",strerror(errno));
+	  logger(LOG_ERR,"dhcpStart: ioctl SIOCGIFHWADDR: %s",strerror(errno));
 	  exit(1);
 	}
       if ( ifr.ifr_hwaddr.sa_family != ARPHRD_ETHER && ifr.ifr_hwaddr.sa_family != ARPHRD_IEEE802_TR )
 	{
-	  syslog(LOG_ERR,"dhcpStart: interface %s is not Ethernet or 802.2 Token Ring\n",ifr.ifr_name);
+	  logger(LOG_ERR,"dhcpStart: interface %s is not Ethernet or 802.2 Token Ring",ifr.ifr_name);
 	  exit(1);
 	}
       if ( setsockopt(dhcpSocket,SOL_SOCKET,SO_BROADCAST,&o,sizeof(o)) == -1 )
 	{
-	  syslog(LOG_ERR,"dhcpStart: setsockopt: %s\n",strerror(errno));
+	  logger(LOG_ERR,"dhcpStart: setsockopt: %s",strerror(errno));
 	  exit(1);
 	}
       ifr.ifr_flags = saved_if_flags | IFF_UP | IFF_BROADCAST | IFF_NOTRAILERS | IFF_RUNNING;
       if ( ioctl(dhcpSocket,SIOCSIFFLAGS,&ifr) )
 	{
-	  syslog(LOG_ERR,"dhcpStart: ioctl SIOCSIFFLAGS: %s\n",strerror(errno));
+	  logger(LOG_ERR,"dhcpStart: ioctl SIOCSIFFLAGS: %s",strerror(errno));
 	  exit(1);
 	}
       memset(&sap,0,sizeof(sap));
@@ -932,11 +916,10 @@ void *dhcpStart()
       sap.spkt_family = AF_PACKET;
 #endif
       if ( bind(dhcpSocket,(void*)&sap,sizeof(struct sockaddr)) == -1 )
-        syslog(LOG_ERR,"dhcpStart: bind: %s\n",strerror(errno));
+        logger(LOG_ERR,"dhcpStart: bind: %s",strerror(errno));
 
       memcpy(ClientHwAddr,ifr.ifr_hwaddr.sa_data,ETH_ALEN);
-      if ( DebugFlag )
-	fprintf(stdout,"dhcpcd: MAC address = %02x:%02x:%02x:%02x:%02x:%02x\n",
+      logger(LOG_INFO,"MAC address = %02x:%02x:%02x:%02x:%02x:%02x",
 	ClientHwAddr[0], ClientHwAddr[1], ClientHwAddr[2],
 	ClientHwAddr[3], ClientHwAddr[4], ClientHwAddr[5]);
     }
@@ -956,7 +939,7 @@ void *dhcpStart()
   udpFooSocket = socket(AF_INET,SOCK_DGRAM,0);
   if (udpFooSocket == -1)
     {
-      syslog(LOG_ERR,"dhcpStart: socket: %s\n",strerror(errno));
+      logger(LOG_ERR,"dhcpStart: socket: %s",strerror(errno));
       exit(1);
     }
 
@@ -964,26 +947,26 @@ void *dhcpStart()
   if ((flags = fcntl(udpFooSocket, F_GETFD, 0)) < 0 ||
       fcntl(udpFooSocket, F_SETFD, flags | FD_CLOEXEC) < 0)
     {
-      syslog(LOG_ERR,"dhcpStart: fcntl: %s\n",strerror(errno));
+      logger(LOG_ERR,"dhcpStart: fcntl: %s",strerror(errno));
       exit(1);
     }
  
   if ( setsockopt(udpFooSocket,SOL_SOCKET,SO_BROADCAST,&o,sizeof(o)) )
-    syslog(LOG_ERR,"dhcpStart: setsockopt: %s\n",strerror(errno));
+    logger(LOG_ERR,"dhcpStart: setsockopt: %s",strerror(errno));
   memset(&clientAddr.sin_addr,0,sizeof(&clientAddr.sin_addr));
   clientAddr.sin_family = AF_INET;
   clientAddr.sin_port = htons(DHCP_CLIENT_PORT);
   if ( bind(udpFooSocket,(struct sockaddr *)&clientAddr,sizeof(clientAddr)) )
     {
       if ( errno != EADDRINUSE )
-	syslog(LOG_ERR,"dhcpStart: bind: %s\n",strerror(errno));
+	logger(LOG_ERR,"dhcpStart: bind: %s",strerror(errno));
       close(udpFooSocket);
       udpFooSocket = -1;
     }
   else
     if ( fcntl(udpFooSocket,F_SETFL,O_NONBLOCK) == -1 )
       {
-	syslog(LOG_ERR,"dhcpStart: fcntl: %s\n",strerror(errno));
+	logger(LOG_ERR,"dhcpStart: fcntl: %s",strerror(errno));
 	exit(1);
       }
 
@@ -1006,8 +989,7 @@ void *dhcpReboot()
 {
   if ( sigsetjmp(env,0xffff) )
     {
-      if ( DebugFlag )
-	syslog(LOG_DEBUG,"timed out waiting for DHCP_ACK response\n");
+      logger(LOG_DEBUG,"timed out waiting for DHCP_ACK response");
       if (TimeOut != 0)
 	alarm(TimeOut);
       return &dhcpInit;
@@ -1061,7 +1043,7 @@ DhcpIface.client_id[3],DhcpIface.client_id[4],DhcpIface.client_id[5],
 DhcpIface.client_id[6],DhcpIface.client_id[7],DhcpIface.client_id[8]);
 #endif
 
-  if ( DebugFlag ) syslog(LOG_DEBUG,"broadcasting DHCP_DISCOVER\n");
+  logger(LOG_DEBUG, "broadcasting DHCP_DISCOVER");
   if ( dhcpSendAndRecv(random(),DHCP_OFFER,&buildDhcpDiscover) )
     {
       dhcpStop();
@@ -1069,7 +1051,7 @@ DhcpIface.client_id[6],DhcpIface.client_id[7],DhcpIface.client_id[8]);
     }
   if ( SendSecondDiscover )
     {
-      if ( DebugFlag ) syslog(LOG_DEBUG,"broadcasting second DHCP_DISCOVER\n");
+      logger(LOG_DEBUG,"broadcasting second DHCP_DISCOVER");
       dhcpSendAndRecv(DhcpMsgRecv->xid,DHCP_OFFER,&buildDhcpDiscover);
     }
   prev_ip_addr = DhcpIface.ciaddr;
@@ -1078,8 +1060,7 @@ DhcpIface.client_id[6],DhcpIface.client_id[7],DhcpIface.client_id[8]);
   memcpy(DhcpIface.shaddr,UdpIpMsgRecv.ethhdr.ether_shost,ETH_ALEN);
   DhcpIface.xid = DhcpMsgRecv->xid;
 /* DHCP_OFFER received */
-  if ( DebugFlag )
-    syslog(LOG_DEBUG,"DHCP_OFFER received from %s (%u.%u.%u.%u)\n",
+    logger(LOG_DEBUG,"DHCP_OFFER received from %s (%u.%u.%u.%u)",
     DhcpMsgRecv->sname,
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[0],
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[1],
@@ -1094,16 +1075,15 @@ unsigned xid;
 void (*buildDhcpMsg)(unsigned);
 {
 /* send the message and read and parse replies into DhcpOptions */
-  if ( DebugFlag )
-    syslog(LOG_DEBUG,"broadcasting DHCP_REQUEST for %u.%u.%u.%u\n",
+  logger(LOG_DEBUG,"broadcasting DHCP_REQUEST for %u.%u.%u.%u",
 	   ((unsigned char *)&DhcpIface.ciaddr)[0],
 	   ((unsigned char *)&DhcpIface.ciaddr)[1],
 	   ((unsigned char *)&DhcpIface.ciaddr)[2],
 	   ((unsigned char *)&DhcpIface.ciaddr)[3]);
   if ( dhcpSendAndRecv(xid,DHCP_ACK,buildDhcpMsg) ) return &dhcpInit;
   ReqSentTime=time(NULL);
-  if ( DebugFlag ) syslog(LOG_DEBUG,
-    "DHCP_ACK received from %s (%u.%u.%u.%u)\n",DhcpMsgRecv->sname,
+  logger(LOG_DEBUG,
+    "DHCP_ACK received from %s (%u.%u.%u.%u)",DhcpMsgRecv->sname,
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[0],
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[1],
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[2],
@@ -1112,8 +1092,8 @@ void (*buildDhcpMsg)(unsigned);
 /* check if the offered IP address already in use */
   if ( arpCheck() )
     {
-      if ( DebugFlag ) syslog(LOG_DEBUG,
-	"requested %u.%u.%u.%u address is in use\n",
+      logger(LOG_DEBUG,
+	"requested %u.%u.%u.%u address is in use",
 	((unsigned char *)&DhcpIface.ciaddr)[0],
 	((unsigned char *)&DhcpIface.ciaddr)[1],
 	((unsigned char *)&DhcpIface.ciaddr)[2],
@@ -1122,8 +1102,8 @@ void (*buildDhcpMsg)(unsigned);
       DhcpIface.ciaddr = 0;
       return &dhcpInit;
     }
-  if ( DebugFlag ) syslog(LOG_DEBUG,
-    "verified %u.%u.%u.%u address is not in use\n",
+  logger(LOG_DEBUG,
+    "verified %u.%u.%u.%u address is not in use",
     ((unsigned char *)&DhcpIface.ciaddr)[0],
     ((unsigned char *)&DhcpIface.ciaddr)[1],
     ((unsigned char *)&DhcpIface.ciaddr)[2],
@@ -1202,8 +1182,7 @@ void *dhcpRenew()
   else
     return &dhcpRebind;
 
-  if ( DebugFlag )
-    syslog(LOG_DEBUG,"sending DHCP_REQUEST for %u.%u.%u.%u to %u.%u.%u.%u\n",
+  logger(LOG_DEBUG,"sending DHCP_REQUEST for %u.%u.%u.%u to %u.%u.%u.%u",
 	   ((unsigned char *)&DhcpIface.ciaddr)[0],
 	   ((unsigned char *)&DhcpIface.ciaddr)[1],
 	   ((unsigned char *)&DhcpIface.ciaddr)[2],
@@ -1214,8 +1193,8 @@ void *dhcpRenew()
 	   ((unsigned char *)&DhcpIface.siaddr)[3]);
   if ( dhcpSendAndRecv(random(),DHCP_ACK,&buildDhcpRenew) ) return &dhcpRebind;
   ReqSentTime=time(NULL);
-  if ( DebugFlag ) syslog(LOG_DEBUG,
-    "DHCP_ACK received from %s (%u.%u.%u.%u)\n",DhcpMsgRecv->sname,
+  logger(LOG_DEBUG,
+    "DHCP_ACK received from %s (%u.%u.%u.%u)",DhcpMsgRecv->sname,
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[0],
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[1],
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[2],
@@ -1233,16 +1212,15 @@ void *dhcpRebind()
   else
     return &dhcpStop;
 
-  if ( DebugFlag )
-    syslog(LOG_DEBUG,"broadcasting DHCP_REQUEST for %u.%u.%u.%u\n",
+  logger(LOG_DEBUG,"broadcasting DHCP_REQUEST for %u.%u.%u.%u",
 	   ((unsigned char *)&DhcpIface.ciaddr)[0],
 	   ((unsigned char *)&DhcpIface.ciaddr)[1],
 	   ((unsigned char *)&DhcpIface.ciaddr)[2],
 	   ((unsigned char *)&DhcpIface.ciaddr)[3]);
   if ( dhcpSendAndRecv(random(),DHCP_ACK,&buildDhcpRebind) ) return &dhcpStop;
   ReqSentTime=time(NULL);
-  if ( DebugFlag ) syslog(LOG_DEBUG,
-    "DHCP_ACK received from %s (%u.%u.%u.%u)\n",DhcpMsgRecv->sname,
+  logger(LOG_DEBUG,
+    "DHCP_ACK received from %s (%u.%u.%u.%u)",DhcpMsgRecv->sname,
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[0],
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[1],
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[2],
@@ -1265,8 +1243,7 @@ void *dhcpRelease()
 
   memset(&addr,0,sizeof(struct sockaddr));
   memcpy(addr.sa_data,IfName,IfName_len);
-  if ( DebugFlag )
-    syslog(LOG_DEBUG,"sending DHCP_RELEASE for %u.%u.%u.%u to %u.%u.%u.%u\n",
+  logger(LOG_DEBUG,"sending DHCP_RELEASE for %u.%u.%u.%u to %u.%u.%u.%u",
 	   ((unsigned char *)&DhcpIface.ciaddr)[0],
 	   ((unsigned char *)&DhcpIface.ciaddr)[1],
 	   ((unsigned char *)&DhcpIface.ciaddr)[2],
@@ -1278,19 +1255,17 @@ void *dhcpRelease()
   if ( sendto(dhcpSocket,&UdpIpMsgSend,sizeof(struct packed_ether_header)+
 	      sizeof(udpiphdr)+sizeof(dhcpMessage),0,
 	      &addr,sizeof(struct sockaddr)) == -1 )
-    syslog(LOG_ERR,"dhcpRelease: sendto: %s\n",strerror(errno));
+  logger(LOG_ERR,"dhcpRelease: sendto: %s",strerror(errno));
   arpRelease(); /* clear ARP cache entries for client IP addr */
   if ( SetHostName )
     {
       sethostname(InitialHostName,InitialHostName_len);
-      if ( DebugFlag )
-	fprintf(stdout,"dhcpcd: your hostname = %s\n",InitialHostName);
+      logger(LOG_DEBUG, "your hostname = %s",InitialHostName);
     }
   if ( SetDomainName )
     {
       setdomainname(InitialDomainName,InitialDomainName_len);
-      if ( DebugFlag )
-	fprintf(stdout,"dhcpcd: your domainname = %s\n",InitialDomainName);
+      logger(LOG_DEBUG,"your domainname = %s\n",InitialDomainName);
     }
   DhcpIface.ciaddr=0;
   return &dhcpInit;
@@ -1314,13 +1289,13 @@ void *dhcpStop()
   p->sin_addr.s_addr = 0;
 #ifndef OLD_LINUX_VERSION
   if ( ioctl(dhcpSocket,SIOCSIFADDR,&ifr) == -1 )
-    syslog(LOG_ERR,"dhcpStop: ioctl SIOCSIFADDR: %s\n",strerror(errno));
+    logger(LOG_ERR,"dhcpStop: ioctl SIOCSIFADDR: %s",strerror(errno));
 #endif
   if (DownIfaceOnStop)
     {
       ifr.ifr_flags = saved_if_flags & ~IFF_UP;
       if ( (IfName_len==IfNameExt_len) && ioctl(dhcpSocket,SIOCSIFFLAGS,&ifr) )
-        syslog(LOG_ERR,"dhcpStop: ioctl SIOCSIFFLAGS: %s\n",strerror(errno));
+        logger(LOG_ERR,"dhcpStop: ioctl SIOCSIFFLAGS: %s",strerror(errno));
     }
 tsc:
   close(dhcpSocket);
@@ -1331,6 +1306,8 @@ tsc:
     rename(nis_file_sv, nis_file);
   if ( ntp_renamed )
     rename(ntp_file_sv, ntp_file);
+
+  if ( ! execOnStop ) return &dhcpStart;
 
   if ( ! stat("/sbin/resolvconf", &buf) )
     {
@@ -1346,7 +1323,7 @@ tsc:
           arg[2] = IfName;
           arg[3] = NULL;
           if ( execv(arg[0], arg) && errno != ENOENT )
-            syslog(LOG_ERR,"dhcpStop: error executing \"%s %s %s\": %s\n",
+            logger(LOG_ERR,"dhcpStop: error executing \"%s %s %s\": %s",
               arg[0],arg[1],arg[2],strerror(errno));
           exit(0);
         }
@@ -1369,11 +1346,11 @@ void *dhcpDecline()
   htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),sizeof(dhcpMessage));
   memset(&addr,0,sizeof(struct sockaddr));
   memcpy(addr.sa_data,IfName,IfName_len);
-  if ( DebugFlag ) syslog(LOG_DEBUG,"broadcasting DHCP_DECLINE\n");
+  logger(LOG_DEBUG,"broadcasting DHCP_DECLINE");
   if ( sendto(dhcpSocket,&UdpIpMsgSend,sizeof(struct packed_ether_header)+
 	      sizeof(udpiphdr)+sizeof(dhcpMessage),0,
 	      &addr,sizeof(struct sockaddr)) == -1 )
-    syslog(LOG_ERR,"dhcpDecline: sendto: %s\n",strerror(errno));
+    logger(LOG_ERR,"dhcpDecline: sendto: %s",strerror(errno));
   return &dhcpInit;
 }
 #endif
@@ -1400,7 +1377,7 @@ void *dhcpInform()
 	{
 	  if ( readDhcpCache() )
 	    {
-	      syslog(LOG_ERR,"dhcpInform: no IP address given\n");
+	      logger(LOG_ERR,"dhcpInform: no IP address given");
 	      return NULL;
 	    }
           else
@@ -1430,19 +1407,17 @@ void *dhcpInform()
   if ( ! DhcpIface.client_len ) clientIDsetup();
   if ( sigsetjmp(env,0xffff) )
     {
-      if ( DebugFlag )
-	syslog(LOG_DEBUG,"timed out waiting for DHCP_ACK response\n");
+      logger(LOG_DEBUG,"timed out waiting for DHCP_ACK response");
       return 0;
     }
-  if ( DebugFlag )
-    syslog(LOG_DEBUG,"broadcasting DHCP_INFORM for %u.%u.%u.%u\n",
+    logger(LOG_DEBUG,"broadcasting DHCP_INFORM for %u.%u.%u.%u",
 	   ((unsigned char *)&DhcpIface.ciaddr)[0],
 	   ((unsigned char *)&DhcpIface.ciaddr)[1],
 	   ((unsigned char *)&DhcpIface.ciaddr)[2],
 	   ((unsigned char *)&DhcpIface.ciaddr)[3]);
   if ( dhcpSendAndRecv(random(),DHCP_ACK,buildDhcpInform) ) return 0;
-  if ( DebugFlag ) syslog(LOG_DEBUG,
-    "DHCP_ACK received from %s (%u.%u.%u.%u)\n",DhcpMsgRecv->sname,
+  logger(LOG_DEBUG,
+    "DHCP_ACK received from %s (%u.%u.%u.%u)",DhcpMsgRecv->sname,
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[0],
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[1],
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[2],
@@ -1451,8 +1426,8 @@ void *dhcpInform()
 /* check if the offered IP address already in use */
   if ( arpCheck() )
     {
-      if ( DebugFlag ) syslog(LOG_DEBUG,
-	"requested %u.%u.%u.%u address is in use\n",
+      logger(LOG_DEBUG,
+	"requested %u.%u.%u.%u address is in use",
 	((unsigned char *)&DhcpIface.ciaddr)[0],
 	((unsigned char *)&DhcpIface.ciaddr)[1],
 	((unsigned char *)&DhcpIface.ciaddr)[2],
@@ -1460,8 +1435,8 @@ void *dhcpInform()
       dhcpDecline();
       return 0;
     }
-  if ( DebugFlag ) syslog(LOG_DEBUG,
-    "verified %u.%u.%u.%u address is not in use\n",
+  logger(LOG_DEBUG,
+    "verified %u.%u.%u.%u address is not in use",
     ((unsigned char *)&DhcpIface.ciaddr)[0],
     ((unsigned char *)&DhcpIface.ciaddr)[1],
     ((unsigned char *)&DhcpIface.ciaddr)[2],

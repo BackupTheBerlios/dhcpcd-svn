@@ -113,6 +113,7 @@ man_MANS = @PACKAGE@.8
 sbin_PROGRAMS = dhcpcd 
 
 dhcpcd_SOURCES = \
+	logger.c		\
 	peekfd.c		\
 	udpipgen.c		\
 	buildmsg.c		\
@@ -142,7 +143,7 @@ CONFIG_CLEAN_FILES =
 sbin_PROGRAMS = dhcpcd$(EXEEXT)
 PROGRAMS = $(sbin_PROGRAMS)
 
-am_dhcpcd_OBJECTS = peekfd.$(OBJEXT) udpipgen.$(OBJEXT) \
+am_dhcpcd_OBJECTS = logger.$(OBJEXT) peekfd.$(OBJEXT) udpipgen.$(OBJEXT) \
 	buildmsg.$(OBJEXT) signals.$(OBJEXT) arp.$(OBJEXT) \
 	dhcpconfig.$(OBJEXT) client.$(OBJEXT) cache.$(OBJEXT) \
 	dhcpcd.$(OBJEXT)
@@ -157,8 +158,8 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/arp.Po ./$(DEPDIR)/buildmsg.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/cache.Po ./$(DEPDIR)/client.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/dhcpcd.Po ./$(DEPDIR)/dhcpconfig.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/peekfd.Po ./$(DEPDIR)/signals.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/udpipgen.Po
+@AMDEP_TRUE@	./$(DEPDIR)/logger.Po ./$(DEPDIR)/peekfd.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/signals.Po ./$(DEPDIR)/udpipgen.Po
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
@@ -221,6 +222,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/client.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dhcpcd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dhcpconfig.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logger.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/peekfd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/signals.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udpipgen.Po@am__quote@

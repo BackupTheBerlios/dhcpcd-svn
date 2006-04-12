@@ -33,7 +33,6 @@ extern	dhcpOptions	DhcpOptions;
 extern  dhcpInterface   DhcpIface;
 extern	char		*HostName;
 extern	int		HostName_len;
-extern	int		DebugFlag;
 extern	int		BeRFC1541;
 extern	unsigned	LeaseTime;
 extern	int		TokenRingIf;

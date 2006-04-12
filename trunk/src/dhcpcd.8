@@ -9,7 +9,7 @@ dhcpcd \- DHCP client daemon
 .in +.5i
 .ti -.5i
 dhcpcd
-\%[\-dknoprBCDHNRSTY]
+\%[\-dknoprBCDHNRSTYv]
 \%[\-t\ <timeout>]
 \%[\-c\ <ExecFilePath>]
 \%[\-h\ <hostname>]
@@ -51,26 +51,15 @@ or
 .BI \-d
 With this flag
 .B dhcpcd
-will
-syslog(LOG_DEBUG,...) messages for about every step it does.
+will echo messages to console for about every step it does.
 It's recommended to use this option since it doesn't really
 produce too much output but will greatly help in resolving
 a problems if any.
+.TP
+.BI \-v
+With this flag
 .B dhcpcd
-uses
-.I LOCAL0
-syslog facility for its output. To catch
-.B dhcpcd
-debugging output add the following line to
-.I /etc/syslog.conf
-file:
-
-local0.*     /var/log/dhcpcd.log
-
-and then refresh syslogd daemon:
-
-kill -1 `cat /var/run/syslogd.pid`
-
+will echo informational messages to console such as IP address recieved.
 .TP
 .BI \-k
 Sends
@@ -346,6 +335,23 @@ Specifies the network interface name (eth0, eth1, etc.).
 uses the network interface
 .I eth0
 unless an explicit name is specified.
+
+.SH NOTES
+.TP
+.B dhcpcd
+uses
+.I LOCAL0
+syslog facility for all logging. To catch
+.B dhcpcd
+debugging output add the following line to
+.I /etc/syslog.conf
+file:
+
+local0.*     /var/log/dhcpcd.log
+
+and then refresh syslogd daemon:
+
+kill -1 `cat /var/run/syslogd.pid`
 
 .SH FILES
 .PD 0

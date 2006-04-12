@@ -33,7 +33,6 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
-#include <syslog.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -42,14 +41,15 @@
 #include "kversion.h"
 #include "pathnames.h"
 #include "client.h"
+#include "logger.h"
 
+extern 	int			DebugFlag;
 extern	int			dhcpSocket;
 extern  int                     udpFooSocket;
 extern	int			prev_ip_addr;
 extern	int			Window;
 extern  int			SetDHCPDefaultRoutes;
 extern	int			TestCase;
-extern	int			DebugFlag;
 extern	int			SetDomainName;
 extern	int			SetHostName;
 extern	int			ReplResolvConf;
@@ -127,7 +127,7 @@ char *prm;
         argc[3]=NULL;
       argc[4]=NULL;
       if ( execve(exec_on_change,argc,ProgramEnviron) && errno != ENOENT )
-	syslog(LOG_ERR,"error executing \"%s %s %s\": %s\n",
+	logger(LOG_ERR,"error executing \"%s %s %s\": %s",
 	exec_on_change,hostinfo_file,prm,strerror(errno));
       exit(0);
     }
@@ -222,14 +222,14 @@ if ( ioctl(dhcpSocket,SIOCADDRT,&rtent) == -1 )
 	    rtent.rt_flags	=	RTF_UP|RTF_GATEWAY|(Window ? RTF_WINDOW : 0);
 	    if ( ioctl(dhcpSocket,SIOCADDRT,&rtent) == -1 )
 	      {
-		syslog(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %s\n",strerror(errno));
+		logger(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %s",strerror(errno));
 		return -1;
 	      }
 	  }
       }
     else
       {
-	syslog(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %s\n",strerror(errno));
+	logger(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %s",strerror(errno));
 	return -1;
       }
   }
@@ -272,7 +272,7 @@ int dhcpConfig()
   p->sin_addr.s_addr = DhcpIface.ciaddr;
   if ( ioctl(dhcpSocket,SIOCSIFADDR,&ifr) == -1 )  /* setting IP address */
     {
-      syslog(LOG_ERR,"dhcpConfig: ioctl SIOCSIFADDR: %s\n",strerror(errno));
+      logger(LOG_ERR,"dhcpConfig: ioctl SIOCSIFADDR: %s",strerror(errno));
       return -1;
     }
   memcpy(&p->sin_addr.s_addr,DhcpOptions.val[subnetMask],4);
@@ -281,13 +281,13 @@ int dhcpConfig()
       p->sin_addr.s_addr = 0xffffffff; /* try 255.255.255.255 */
       if ( ioctl(dhcpSocket,SIOCSIFNETMASK,&ifr) == -1 )
 	{
-	  syslog(LOG_ERR,"dhcpConfig: ioctl SIOCSIFNETMASK: %s\n",strerror(errno));
+	  logger(LOG_ERR,"dhcpConfig: ioctl SIOCSIFNETMASK: %s",strerror(errno));
 	  return -1;
 	}
     }
   memcpy(&p->sin_addr.s_addr,DhcpOptions.val[broadcastAddr],4);
   if ( ioctl(dhcpSocket,SIOCSIFBRDADDR,&ifr) == -1 ) /* setting broadcast address */
-    syslog(LOG_ERR,"dhcpConfig: ioctl SIOCSIFBRDADDR: %s\n",strerror(errno));
+    logger(LOG_ERR,"dhcpConfig: ioctl SIOCSIFBRDADDR: %s",strerror(errno));
 
   /* 
    * setting local route
@@ -309,7 +309,7 @@ int dhcpConfig()
   rtent.rt_metric     	=	1;
   rtent.rt_flags      	=	RTF_UP;
   if ( ioctl(dhcpSocket,SIOCDELRT,&rtent) )
-    syslog(LOG_ERR,"dhcpConfig: ioctl SIOCDELRT: %s\n",strerror(errno));
+    logger(LOG_ERR,"dhcpConfig: ioctl SIOCDELRT: %s",strerror(errno));
 #endif
   
   memset(&rtent,0,sizeof(struct rtentry));
@@ -327,7 +327,7 @@ int dhcpConfig()
   rtent.rt_metric     	=	RouteMetric;
   rtent.rt_flags      	=	RTF_UP;
   if ( ioctl(dhcpSocket,SIOCADDRT,&rtent) )
-    syslog(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %s\n",strerror(errno));
+    logger(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %s",strerror(errno));
 
   for (i=0;i<DhcpOptions.len[staticRoute];i+=8)
     {  /* setting static routes */
@@ -354,7 +354,7 @@ int dhcpConfig()
 #endif
       rtent.rt_metric     =	  RouteMetric;
       if ( ioctl(dhcpSocket,SIOCADDRT,&rtent) )
-	syslog(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %s\n",strerror(errno));
+	logger(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %s",strerror(errno));
     }
 
   if ( SetDHCPDefaultRoutes )
@@ -373,12 +373,11 @@ int dhcpConfig()
   sap.spkt_protocol = htons(ETH_P_ALL);
   memcpy(sap.spkt_device,IfName,IfName_len);
   if ( bind(dhcpSocket,(void*)&sap,sizeof(struct sockaddr)) == -1 )
-    syslog(LOG_ERR,"dhcpConfig: bind: %s\n",strerror(errno));
+    logger(LOG_ERR,"dhcpConfig: bind: %s",strerror(errno));
 #endif  
 
   arpInform();
-  if ( DebugFlag )
-    fprintf(stdout,"dhcpcd: your IP address = %u.%u.%u.%u\n",
+  logger(LOG_INFO,"your IP address = %u.%u.%u.%u",
     ((unsigned char *)&DhcpIface.ciaddr)[0],
     ((unsigned char *)&DhcpIface.ciaddr)[1],
     ((unsigned char *)&DhcpIface.ciaddr)[2],
@@ -398,11 +397,11 @@ int dhcpConfig()
 	f=popen(arg,"w");
 	free(arg);
         if ( !f )
-            syslog(LOG_ERR,"dhcpConfig: popen: %s\n", strerror(errno));
+            logger(LOG_ERR,"dhcpConfig: popen: %s", strerror(errno));
       } else {
         f=fopen(resolv_file, "w");
         if ( !f )
-            syslog(LOG_ERR,"dhcpConfig: fopen %s: %s\n", resolv_file, strerror(errno));
+            logger(LOG_ERR,"dhcpConfig: fopen %s: %s", resolv_file, strerror(errno));
       }
       if ( f ) 
 	{
@@ -468,7 +467,7 @@ int dhcpConfig()
 	  if (prefix) free(prefix);
 	}
       else
-	syslog(LOG_ERR,"dhcpConfig: fopen %s: %s\n", nis_file, strerror(errno));
+	logger(LOG_ERR,"dhcpConfig: fopen %s: %s", nis_file, strerror(errno));
     }
   if ( ReplNTPConf && DhcpOptions.len[ntpServers]>=4 )
     {
@@ -503,7 +502,7 @@ int dhcpConfig()
  	  fclose(f);
  	}
        else
- 	syslog(LOG_ERR,"dhcpConfig: fopen %s: %s\n", ntp_file, strerror(errno));
+ 	logger(LOG_ERR,"dhcpConfig: fopen %s: %s", ntp_file, strerror(errno));
      }
   if ( ! DhcpOptions.len[hostName] )
     {
@@ -528,15 +527,14 @@ int dhcpConfig()
       gethostname(InitialHostName,sizeof(InitialHostName));
       InitialHostName_len=strlen(InitialHostName);
     }
-  if ( DebugFlag )
-    fprintf(stdout,"dhcpcd: orig hostname = %s\n",InitialHostName);
+  logger(LOG_DEBUG,"orig hostname = %s",InitialHostName);
   if ( SetHostName || InitialHostName_len == 0 || ! strcmp(InitialHostName, "(none)") )
     {
       if ( DhcpOptions.len[hostName] )
         {
+	  SetHostName = 1;
           sethostname(DhcpOptions.val[hostName],DhcpOptions.len[hostName]);
-	  if ( DebugFlag )
-	    fprintf(stdout,"dhcpcd: your hostname = %s\n",
+	  logger(LOG_INFO,"your hostname = %s",
 	      (char *)DhcpOptions.val[hostName]);
 	}
     }
@@ -545,8 +543,7 @@ int dhcpConfig()
       if ( InitialDomainName_len<0 && getdomainname(InitialDomainName,sizeof(InitialDomainName))==0 )
 	{
 	  InitialDomainName_len=strlen(InitialDomainName);
-	  if ( DebugFlag )
-	    fprintf(stdout,"dhcpcd: orig domainname = %s\n",InitialDomainName);
+	  logger(LOG_INFO,"orig domainname = %s",InitialDomainName);
 	}
 #if 0
       if ( DhcpOptions.len[nisDomainName] )
@@ -554,7 +551,7 @@ int dhcpConfig()
           setdomainname(DhcpOptions.val[nisDomainName],
 		      DhcpOptions.len[nisDomainName]);
 	  if ( DebugFlag )
-	    fprintf(stdout,"dhcpcd: your domainname = %s\n",
+	    fprintf(stdout,"your domainname = %s\n",
 		(char *)DhcpOptions.val[nisDomainName]);
         }
       else
@@ -592,8 +589,7 @@ int dhcpConfig()
             {
 	      setdomainname(DhcpOptions.val[domainName],
 		DhcpOptions.len[domainName]);
-	      if ( DebugFlag )
-		fprintf(stdout,"dhcpcd: your domainname = %s\n",
+	      logger(LOG_DEBUG,"your domainname = %s\n",
 		(char *)DhcpOptions.val[domainName]);
 	    }
 #if 0
@@ -608,7 +604,7 @@ tsc:
   if ( i == -1 ||
       write(i,(char *)&DhcpIface,sizeof(dhcpInterface)) == -1 ||
       close(i) == -1 )
-    syslog(LOG_ERR,"dhcpConfig: open/write/close: %s\n",strerror(errno));
+    logger(LOG_ERR,"dhcpConfig: open/write/close: %s",strerror(errno));
   snprintf(hostinfo_file,sizeof(hostinfo_file),DHCP_HOSTINFO,ConfigDir,IfNameExt);
   snprintf(hostinfo_file_old,sizeof(hostinfo_file_old),""DHCP_HOSTINFO".old",ConfigDir,IfNameExt);
   rename(hostinfo_file,hostinfo_file_old);
@@ -792,7 +788,7 @@ FQDNHOSTNAME='%s'\n",
       have_info = 1;
     }
   else
-    syslog(LOG_ERR,"dhcpConfig: fopen %s: %s\n", hostinfo_file, strerror(errno));
+    logger(LOG_ERR,"dhcpConfig: fopen %s: %s", hostinfo_file, strerror(errno));
 #if 0
   if ( Cfilename )
     if ( fork() == 0 )
@@ -801,7 +797,7 @@ FQDNHOSTNAME='%s'\n",
 	argc[0]=Cfilename;
 	argc[1]=NULL;
 	if ( execve(Cfilename,argc,ProgramEnviron) )
-	  syslog(LOG_ERR,"error executing \"%s\": %s\n",
+	  logger(LOG_ERR,"error executing \"%s\": %s",
 	  Cfilename,strerror(errno));
 	exit(0);
       }
@@ -815,7 +811,7 @@ FQDNHOSTNAME='%s'\n",
     }
   if ( *(unsigned int *)DhcpOptions.val[dhcpIPaddrLeaseTime] == 0xffffffff )
     {
-      syslog(LOG_INFO,"infinite IP address lease time. Exiting\n");
+      logger(LOG_INFO,"infinite IP address lease time. Exiting");
       exit(0);
     }
   return 0;

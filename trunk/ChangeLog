@@ -1,3 +1,8 @@
+12 Apr 2006; Roy Marples <uberlord@gentoo.org>
+
+   Implemented a better logging and debugging sytem.
+   We now default to doing arp checks.
+
 11 Apr 2006; Roy Marples <uberlord@gentoo.org>
 
    We now set hostname by default if current hostname is blank or (none)
@@ -9,7 +14,6 @@
 07 Apr 2006; Roy Marples <uberlord@gentoo.org>
 
    Remove klunky fd closing and replace with saner fnctl FD_CLOEXEC.
-   Don't call dhcpStop() if called with SIGTERM.
 
 27 Mar 2006; Roy Marples <uberlord@gentoo.org>
 

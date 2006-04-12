@@ -7,6 +7,7 @@ man_MANS		= @PACKAGE@.8
 sbin_PROGRAMS		= dhcpcd 
 
 dhcpcd_SOURCES		=	\
+	logger.c		\
 	peekfd.c		\
 	udpipgen.c		\
 	buildmsg.c		\

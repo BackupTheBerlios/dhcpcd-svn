@@ -26,7 +26,6 @@
 #include <sys/wait.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <syslog.h>
 #include <signal.h>
 #include <setjmp.h>
 #include <stdlib.h>
@@ -34,14 +33,16 @@
 #include <errno.h>
 #include "pathnames.h"
 #include "client.h"
+#include "logger.h"
 
 extern char		*ProgramName;
 extern char		*IfNameExt;
 extern char		*ConfigDir;
-extern int		DebugFlag;
 extern int              Persistent;
 extern jmp_buf		env;
 extern void		*(*currState)();
+extern int		execOnStop;
+
 /*****************************************************************************/
 void killPid(sig)
 int sig;
@@ -58,7 +59,7 @@ int sig;
     {
       unlink(pidfile);
 ntrn: if ( sig == SIGALRM ) return;
-      fprintf(stderr,"****  %s: not running\n",ProgramName);
+      logger(LOG_ERR,"%s: not running", ProgramName);
     }
   exit(0);
 }
@@ -71,7 +72,7 @@ void writePidFile(pid_t pid)
   fp=fopen(pidfile,"w");
   if ( fp == NULL )
     {
-      syslog(LOG_ERR,"writePidFile: fopen: %s\n",strerror(errno));
+      logger(LOG_ERR, "writePidFile: fopen: %s", strerror(errno));
       exit(1);
     }
   fprintf(fp,"%u\n",pid);
@@ -110,10 +111,7 @@ int sig;
 		  if ( currState == &dhcpReboot )
 		    siglongjmp(env,4);  /* failed to acquire the same IP address */
 		  else
-		    {
-	              syslog(LOG_ERR,"timed out waiting for a valid DHCP server response\n");
-		      fprintf(stderr,"timed out waiting for a valid DHCP server response\n");
-		    }
+	            logger(LOG_ERR, "timed out waiting for a valid DHCP server response");
 		}
 	    }
         }
@@ -127,10 +125,16 @@ int sig;
 	  /* otherwise 2.0 drops unsent packets. fixme: find a better way than sleep */
 	  sleep(1);
 	}
-	syslog(LOG_ERR,"terminating on signal %d\n",sig);
+	logger(LOG_ERR, "terminating on signal %d",sig);
     }
-  if (!Persistent && sig != SIGTERM)
-    dhcpStop();
+  if (!Persistent || sig != SIGTERM)
+    {
+      /* Disable execing programs on SIGTERM as if any services get restarted then
+       * they get hung and are un-useable even though they do get restarted and
+       * apparently without error. Fix this, as it as a dhcpcd error! */
+      if (sig == SIGTERM) execOnStop = 0;
+      dhcpStop();
+    }
   deletePidFile();
   exit(sig);
 }

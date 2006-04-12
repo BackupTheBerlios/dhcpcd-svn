@@ -38,7 +38,9 @@
 #include "client.h"
 #include "signals.h"
 #include "udpipgen.h"
+#include "logger.h"
 
+int		Daemonized	=	0;
 struct in_addr  inform_ipaddr,default_router;
 char		*ProgramName	=	NULL;
 char            **ProgramEnviron=       NULL;
@@ -55,6 +57,7 @@ unsigned char	*ClientID	=	NULL;
 int		ClientID_len	=	0;
 void		*(*currState)()	=	&dhcpReboot;
 int		DebugFlag	=	0;
+int		VerboseFlag	=	0;
 int		BeRFC1541	=	0;
 unsigned	LeaseTime	=	DEFAULT_LEASETIME;
 int		ReplResolvConf	=	1;
@@ -141,7 +144,7 @@ char *argc[],*argv[];
  
   if ( geteuid() )
     {
-      fprintf(stderr,"****  %s: not a superuser\n",argc[0]);
+      fprintf(stderr,"%s: not a superuser\n",argc[0]);
       exit(1);
     }
 
@@ -186,6 +189,10 @@ prgs: switch ( argc[i][s] )
 	  case 'd':
 	    s++;
 	    DebugFlag=1;
+	    goto prgs;
+	  case 'v':
+	    s++;
+	    VerboseFlag=1;
 	    goto prgs;
 	  case 'r':
 	    s++;
@@ -427,16 +434,16 @@ usage:	    print_version();
   if ( killFlag ) killPid(killFlag);
   if ( ! TestCase ) checkIfAlreadyRunning();
   if ( versionFlag ) print_version();
-  openlog(PACKAGE,LOG_PID|(DebugFlag?LOG_CONS:0),LOG_LOCAL0);
+  openlog(PACKAGE,LOG_PID,LOG_LOCAL0);
   signalSetup();
   if ( mkdir(ConfigDir,S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH) && errno != EEXIST )
     {
-      syslog(LOG_ERR,"mkdir(\"%s\",0): %s\n",ConfigDir,strerror(errno));
+      logger(LOG_ERR, "mkdir(\"%s\",0): %s\n", ConfigDir, strerror(errno));
       exit(1);
     }
   if ( mkdir(etcDir,S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH) && errno != EEXIST )
     {
-      syslog(LOG_ERR,"mkdir(\"%s\",0): %s\n",etcDir,strerror(errno));
+      logger(LOG_ERR, "mkdir(\"%s\",0): %s\n", etcDir, strerror(errno));
       exit(1);
     }
   snprintf(resolv_file, sizeof(resolv_file), RESOLV_FILE, etcDir);
@@ -471,6 +478,7 @@ usage:	    print_version();
       writePidFile(s);
       exit(0); /* got into bound state. */
     }
+  Daemonized = 1;
   setsid();
   if ( (i=open("/dev/null",O_RDWR,0)) >= 0 )
     {
