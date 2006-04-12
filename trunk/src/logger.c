@@ -28,7 +28,7 @@ void logger(int level, const char *fmt, ...)
 	FILE *f = stderr;
 
 	va_start(p, fmt);
-	__va_copy(p2, p);
+	va_copy(p2, p);
 	if(!Daemonized && (DebugFlag || level <= LOG_ERR 
 				|| (VerboseFlag && level == LOG_INFO))) {
 		if ( level == LOG_DEBUG || level == LOG_INFO )
