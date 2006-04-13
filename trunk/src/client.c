@@ -798,11 +798,11 @@ void (*buildUdpIpMsg)(unsigned);
 	  if ( *(unsigned char *)DhcpOptions.val[dhcpMessageType] == DHCP_NAK )
 	    {
 	      if ( DhcpOptions.val[dhcpMsg] )
-		logger(LOG_ERR,
+		logger(LOG_INFO,
 		"DHCP_NAK server response received: %s",
 		(char *)DhcpOptions.val[dhcpMsg]);
 	      else
-		logger(LOG_ERR,
+		logger(LOG_INFO,
 		"DHCP_NAK server response received");
 	      return 1;
 	    }
