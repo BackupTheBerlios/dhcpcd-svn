@@ -56,8 +56,6 @@ int		ClassID_len	=	0;
 unsigned char	*ClientID	=	NULL;
 int		ClientID_len	=	0;
 void		*(*currState)()	=	&dhcpReboot;
-int		DebugFlag	=	0;
-int		VerboseFlag	=	0;
 int		BeRFC1541	=	0;
 unsigned	LeaseTime	=	DEFAULT_LEASETIME;
 int		ReplResolvConf	=	1;
@@ -93,6 +91,8 @@ char		nis_file_sv[128];
 char		ntp_file[128];
 char		ntp_file_sv[128];
 int		SetFQDNHostName	=	FQDNdisable;
+
+extern	int	LogLevel;
 
 /*****************************************************************************/
 void print_version()
@@ -186,14 +186,19 @@ prgs: switch ( argc[i][s] )
 	    s++;
 	    killFlag=SIGALRM;
 	    goto prgs;
+	  case 'v':
+	    if ( argc[i][s+1] ) goto usage;
+	    i++;
+	    if ( ! argc[i] ) goto usage;
+	    if ((LogLevel = log_to_level(argc[i])) < 0)
+		    LogLevel = atoi(argc[i]);
+	    i++;
+	    s=1;
+	    goto prgs;
 	  case 'd':
 	    s++;
-	    DebugFlag=1;
-	    goto prgs;
-	  case 'v':
-	    s++;
-	    VerboseFlag=1;
-	    goto prgs;
+	    LogLevel = log_to_level("LOG_DEBUG");
+	    break;
 	  case 'r':
 	    s++;
 	    BeRFC1541=1;
@@ -404,7 +409,8 @@ usage:	    print_version();
 "Usage: dhcpcd [-dknoprBCDHNRSTY] [-l leasetime] [-h hostname] [-t timeout]\n\
        [-i vendorClassID] [-I ClientID] [-c filename] [-s [ipaddr]]\n\
        [-w windowsize] [-L ConfigDir] [-G [gateway]] [-e etcDir]\n\
-       [-m routeMetric] [-F none|ptr|both] [interface]\n");
+       [-m routeMetric] [-F none|ptr|both]\n\
+       [-v logLevel] [interface]\n");
 	    exit(1);
 	}
     else

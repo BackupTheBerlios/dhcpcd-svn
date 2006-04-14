@@ -9,7 +9,7 @@ dhcpcd \- DHCP client daemon
 .in +.5i
 .ti -.5i
 dhcpcd
-\%[\-dknoprBCDHNRSTYv]
+\%[\-knoprBCDHNRSTY]
 \%[\-t\ <timeout>]
 \%[\-c\ <ExecFilePath>]
 \%[\-h\ <hostname>]
@@ -23,6 +23,7 @@ dhcpcd
 \%[\-L\ <ConfigDir>]
 \%[\-e\ <etcDir>]
 \%[\-m\ <routeMetric>]
+\%[\-v\ <logLevel>]
 \%[interface]
 .in -.5i
 .SH DESCRIPTION
@@ -47,19 +48,6 @@ or
 
 
 .SH OPTIONS
-.TP
-.BI \-d
-With this flag
-.B dhcpcd
-will echo messages to console for about every step it does.
-It's recommended to use this option since it doesn't really
-produce too much output but will greatly help in resolving
-a problems if any.
-.TP
-.BI \-v
-With this flag
-.B dhcpcd
-will echo informational messages to console such as IP address recieved.
 .TP
 .BI \-k
 Sends
@@ -270,6 +258,7 @@ script in
 .B FILES
 section below.
 .TP
+.TP
 .BI \-h \ <hostname>
 specifies a string used for the hostname option field when
 .B dhcpcd
@@ -328,14 +317,28 @@ Specifies where
 should create resolv.conf, ntp.conf and yp.conf. Default is the /etc
 directory.
 .TP
+.BI \-v \ <LogLevel>
+Sets the logging level. Default is
+.I LOG_WARNING
+but we always syslog entries up to
+.I LOG_INFO
+inclusive.
+.I LOG_DEBUG
+and
+.I LOG_INFO
+echo to the console.
+.TP
+.BI \-d
+Sets log level
+.I LOG_DEBUG
+as described above.
+.TP
 .BI interface
 Specifies the network interface name (eth0, eth1, etc.).
-.TP
 .B dhcpcd
 uses the network interface
 .I eth0
 unless an explicit name is specified.
-
 .SH NOTES
 .TP
 .B dhcpcd
@@ -388,7 +391,7 @@ passes 3 parameters to
 .I dhcpcd.exe
 script:
 .TP
-.I dhcpcd.exe <HostInfoFilePath> <up|down|new> [-d]
+.I dhcpcd.exe <HostInfoFilePath> <up|down|new>]
 The first parameter
 .I <HostInfoFilePath>
 is path to
@@ -399,13 +402,7 @@ is actually replaced with interface name dhcpcd is
 attached to, e.g. "eth0". The second parameter values
 .I <up|down|new>
 mean the interface has been brought up with the same IP address as before ("up"), or
-with the new IP address ("new"), or the interface has been brought down ("down"). Parameter
-.I -d
-is passed in a case
-.B dhcpcd
-has been started with
-.I -d
-debug flag.
+with the new IP address ("new"), or the interface has been brought down ("down").
 .TP
 .BI <ConfigDir>/dhcpcd-<interface>.cache
 Cache file containing the previously assigned IP address and

@@ -112,7 +112,7 @@ char *prm;
   if ( fork() == 0 )
 #endif
     {
-      char *argc[5],exec_on_change[128];
+      char *argc[3],exec_on_change[128];
       
       if ( Cfilename )
 	snprintf(exec_on_change,sizeof(exec_on_change),Cfilename);
@@ -121,11 +121,7 @@ char *prm;
       argc[0]=exec_on_change;
       argc[1]=hostinfo_file;
       argc[2]=prm;
-      if ( DebugFlag )
-        argc[3]="-d";
-      else
-        argc[3]=NULL;
-      argc[4]=NULL;
+      argc[3]=NULL;
       if ( execve(exec_on_change,argc,ProgramEnviron) && errno != ENOENT )
 	logger(LOG_ERR,"error executing \"%s %s %s\": %s",
 	exec_on_change,hostinfo_file,prm,strerror(errno));

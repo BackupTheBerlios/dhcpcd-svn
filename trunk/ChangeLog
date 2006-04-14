@@ -1,5 +1,6 @@
 12 Apr 2006; Roy Marples <uberlord@gentoo.org>
 
+   Added new option -v to specify a logging level.
    Implemented a better logging and debugging sytem.
    We now default to doing arp checks.
 
