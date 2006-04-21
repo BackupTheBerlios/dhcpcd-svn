@@ -805,11 +805,11 @@ FQDNHOSTNAME='%s'\n",
       execute_on_change("new");
       prev_ip_addr=DhcpIface.ciaddr;
     }
-  if ( *(unsigned int *)DhcpOptions.val[dhcpIPaddrLeaseTime] == 0xffffffff )
+/*  if ( *(unsigned int *)DhcpOptions.val[dhcpIPaddrLeaseTime] == 0xffffffff )
     {
       logger(LOG_INFO,"infinite IP address lease time. Exiting");
       exit(0);
-    }
+    } */
   return 0;
 }
 /*****************************************************************************/

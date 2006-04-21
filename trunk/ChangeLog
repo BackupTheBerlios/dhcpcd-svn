@@ -1,3 +1,9 @@
+21 Apr 2006; Roy Marples <uberlord@gentoo.org>
+
+   No longer exit when an infinite lease time is detected.
+   This allows us to be started by start-stop-daemon implementations that
+   detect if we're still running after a short period of time.
+
 12 Apr 2006; Roy Marples <uberlord@gentoo.org>
 
    Added new option -v to specify a logging level.
