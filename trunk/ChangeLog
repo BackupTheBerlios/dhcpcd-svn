@@ -1,3 +1,5 @@
+** dhcpcd-2.0.5 Released
+
 21 Apr 2006; Roy Marples <uberlord@gentoo.org>
 
    No longer exit when an infinite lease time is detected.
