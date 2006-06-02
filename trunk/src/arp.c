@@ -59,7 +59,6 @@ int tr2eth(struct packed_ether_header *frame);
 
 const int inaddr_broadcast = INADDR_BROADCAST;
 /*****************************************************************************/
-#ifdef ARPCHECK
 int arpCheck()
 {
   arpMessage ArpMsgSend,ArpMsgRecv;
@@ -159,7 +158,6 @@ int arpCheck()
   while ( 1 );
   return 0;
 }
-#endif
 /*****************************************************************************/
 int arpRelease()  /* sends UNARP message, cf. RFC1868 */
 {

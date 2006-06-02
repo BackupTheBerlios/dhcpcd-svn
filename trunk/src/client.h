@@ -217,8 +217,6 @@ void *dhcpRebind();
 void *dhcpRelease();
 void *dhcpStop();
 void *dhcpInform();
-#ifdef ARPCHECK
 void *dhcpDecline();
-#endif
 
 #endif

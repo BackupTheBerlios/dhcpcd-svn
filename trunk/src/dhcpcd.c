@@ -77,6 +77,7 @@ char		*ConfigDir	=	CONFIG_DIR;
 int		SetDHCPDefaultRoutes=	1;
 int		Persistent	=	0;
 int		DownIfaceOnStop	=	1;
+int		DoARP		=	1;
 
 #if 0
 unsigned char	ClientMACaddr[ETH_ALEN];
@@ -158,6 +159,10 @@ prgs: switch ( argc[i][s] )
 	    i++;
 	    s=1;
 	    break;
+	  case 'a':
+	    s++;
+	    DoARP = 0;
+	    goto prgs;
 	  case 'p':
 	    s++;
 	    Persistent = 1;
@@ -406,7 +411,7 @@ prgs: switch ( argc[i][s] )
           default:
 usage:	    print_version();
 	    fprintf(stderr,
-"Usage: dhcpcd [-dknoprBCDHNRSTY] [-l leasetime] [-h hostname] [-t timeout]\n\
+"Usage: dhcpcd [-adknoprBCDHNRSTY] [-l leasetime] [-h hostname] [-t timeout]\n\
        [-i vendorClassID] [-I ClientID] [-c filename] [-s [ipaddr]]\n\
        [-w windowsize] [-L ConfigDir] [-G [gateway]] [-e etcDir]\n\
        [-m routeMetric] [-F none|ptr|both]\n\

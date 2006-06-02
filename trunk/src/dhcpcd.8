@@ -9,7 +9,7 @@ dhcpcd \- DHCP client daemon
 .in +.5i
 .ti -.5i
 dhcpcd
-\%[\-knoprBCDHNRSTY]
+\%[\-aknoprBCDHNRSTY]
 \%[\-t\ <timeout>]
 \%[\-c\ <ExecFilePath>]
 \%[\-h\ <hostname>]
@@ -48,6 +48,11 @@ or
 
 
 .SH OPTIONS
+.TP \-a
+Don't do an
+.B ARP
+check on the IP address give to us by the DHCP server. Normally we do this to
+ensure that the address does not already exist on our network segment.
 .TP
 .BI \-k
 Sends

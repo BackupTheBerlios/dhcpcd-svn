@@ -75,6 +75,7 @@ extern	int		resolv_renamed,yp_renamed,ntp_renamed;
 extern	int		InitialHostName_len,InitialDomainName_len;
 extern	char		*InitialHostName,*InitialDomainName;
 extern	int		DownIfaceOnStop;
+extern  int		DoARP;
 
 extern	char		resolv_file[128];
 extern	char		resolv_file_sv[128];
@@ -90,9 +91,7 @@ extern	int		ClientMACaddr_ind;
 
 extern	int		SetFQDNHostName;
 
-#ifdef ARPCHECK
-int arpCheck();
-#endif
+int     arpCheck();
 int	arpRelease();
 int	dhcpConfig();
 int	readDhcpCache();
@@ -1086,27 +1085,28 @@ void (*buildDhcpMsg)(unsigned);
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[1],
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[2],
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[3]);
-#ifdef ARPCHECK
 /* check if the offered IP address already in use */
-  if ( arpCheck() )
+  if ( DoARP )
     {
-      logger(LOG_ERR,
-	"requested %u.%u.%u.%u address is in use",
-	((unsigned char *)&DhcpIface.ciaddr)[0],
-	((unsigned char *)&DhcpIface.ciaddr)[1],
-	((unsigned char *)&DhcpIface.ciaddr)[2],
-	((unsigned char *)&DhcpIface.ciaddr)[3]);
-      dhcpDecline();
-      DhcpIface.ciaddr = 0;
-      return &dhcpInit;
+      if ( arpCheck() )
+        {
+          logger(LOG_ERR,
+	    "requested %u.%u.%u.%u address is in use",
+	    ((unsigned char *)&DhcpIface.ciaddr)[0],
+	    ((unsigned char *)&DhcpIface.ciaddr)[1],
+	    ((unsigned char *)&DhcpIface.ciaddr)[2],
+	    ((unsigned char *)&DhcpIface.ciaddr)[3]);
+          dhcpDecline();
+          DhcpIface.ciaddr = 0;
+          return &dhcpInit;
+        }
+      logger(LOG_INFO,
+        "verified %u.%u.%u.%u address is not in use",
+        ((unsigned char *)&DhcpIface.ciaddr)[0],
+        ((unsigned char *)&DhcpIface.ciaddr)[1],
+        ((unsigned char *)&DhcpIface.ciaddr)[2],
+        ((unsigned char *)&DhcpIface.ciaddr)[3]);
     }
-  logger(LOG_INFO,
-    "verified %u.%u.%u.%u address is not in use",
-    ((unsigned char *)&DhcpIface.ciaddr)[0],
-    ((unsigned char *)&DhcpIface.ciaddr)[1],
-    ((unsigned char *)&DhcpIface.ciaddr)[2],
-    ((unsigned char *)&DhcpIface.ciaddr)[3]);
-#endif
   if ( dhcpConfig() )
     {
       dhcpStop();
@@ -1329,7 +1329,6 @@ tsc:
   return &dhcpStart;
 }
 /*****************************************************************************/
-#ifdef ARPCHECK
 void *dhcpDecline()
 {
   struct sockaddr addr;
@@ -1349,7 +1348,6 @@ void *dhcpDecline()
     logger(LOG_ERR,"dhcpDecline: sendto: %s",strerror(errno));
   return &dhcpInit;
 }
-#endif
 /*****************************************************************************/
 void *dhcpInform()
 {
@@ -1418,26 +1416,27 @@ void *dhcpInform()
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[1],
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[2],
     ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[3]);
-#ifdef ARPCHECK
 /* check if the offered IP address already in use */
-  if ( arpCheck() )
+  if ( DoARP )
     {
-      logger(LOG_ERR,
-	"requested %u.%u.%u.%u address is in use",
-	((unsigned char *)&DhcpIface.ciaddr)[0],
-	((unsigned char *)&DhcpIface.ciaddr)[1],
-	((unsigned char *)&DhcpIface.ciaddr)[2],
-	((unsigned char *)&DhcpIface.ciaddr)[3]);
-      dhcpDecline();
-      return 0;
+      if ( arpCheck() )
+        {
+          logger(LOG_ERR,
+	    "requested %u.%u.%u.%u address is in use",
+	    ((unsigned char *)&DhcpIface.ciaddr)[0],
+	    ((unsigned char *)&DhcpIface.ciaddr)[1],
+	    ((unsigned char *)&DhcpIface.ciaddr)[2],
+	    ((unsigned char *)&DhcpIface.ciaddr)[3]);
+          dhcpDecline();
+          return 0;
+        }
+      logger(LOG_INFO,
+        "verified %u.%u.%u.%u address is not in use",
+        ((unsigned char *)&DhcpIface.ciaddr)[0],
+        ((unsigned char *)&DhcpIface.ciaddr)[1],
+        ((unsigned char *)&DhcpIface.ciaddr)[2],
+        ((unsigned char *)&DhcpIface.ciaddr)[3]);
     }
-  logger(LOG_INFO,
-    "verified %u.%u.%u.%u address is not in use",
-    ((unsigned char *)&DhcpIface.ciaddr)[0],
-    ((unsigned char *)&DhcpIface.ciaddr)[1],
-    ((unsigned char *)&DhcpIface.ciaddr)[2],
-    ((unsigned char *)&DhcpIface.ciaddr)[3]);
-#endif
   if ( dhcpConfig() ) return 0;
   exit(0);
 }

@@ -132,7 +132,12 @@ int sig;
   if (sig == SIGTERM) siglongjmp(jmpTerm, 1);
   if (!Persistent) dhcpStop();
   deletePidFile();
-  exit(sig);
+
+  /* Exit with 0 if we were told to quit, otherwise the SIG code */
+  if (sig == SIGQUIT || sig == SIGINT || sig == SIGHUP)
+    exit(0);
+  else
+    exit(sig);
 }
 /*****************************************************************************/
 void signalSetup()
@@ -149,6 +154,6 @@ void signalSetup()
   if ( sigsetjmp(jmpTerm, 1) ) {
     if (!Persistent) dhcpStop();
     deletePidFile();
-    exit(SIGTERM);
+    exit(0);
   }
 }

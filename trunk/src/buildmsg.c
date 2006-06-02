@@ -576,7 +576,6 @@ unsigned xid;
   sizeof(dhcpMessage));
 }
 /*****************************************************************************/
-#ifdef ARPCHECK
 void buildDhcpDecline(xid)
 unsigned xid;
 {
@@ -620,7 +619,6 @@ unsigned xid;
   DhcpIface.siaddr,htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),
   sizeof(dhcpMessage));
 }
-#endif
 /*****************************************************************************/
 void buildDhcpInform(xid)
 unsigned xid;

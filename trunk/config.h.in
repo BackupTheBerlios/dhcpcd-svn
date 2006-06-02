@@ -1,8 +1,5 @@
 /* config.h.in.  Generated from configure.in by autoheader.  */
 
-/* Define to enable ARP checking of IP address */
-#undef ARPCHECK
-
 /* Define to enable extra debug messages */
 #undef DEBUG
 
