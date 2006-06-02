@@ -2,8 +2,8 @@
  * peekfd.c
  * 
  * Copyright (C) January, 1998 Sergei Viznyuk <sv@phystech.com>
- * Copyright (C) 2005 Roy Marples <uberlord@gentoo.org>
- * Copyright (C) 2005 Simon Kelley <simon@thekelleys.org.uk>
+ * Copyright (C) 2005 - 2006 Roy Marples <uberlord@gentoo.org>
+ * Copyright (C) 2005 - 2006 Simon Kelley <simon@thekelleys.org.uk>
  * 
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by

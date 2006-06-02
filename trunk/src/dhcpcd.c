@@ -2,8 +2,8 @@
  * dhcpcd - DHCP client daemon -
  * Copyright (C) 1996 - 1997 Yoichi Hariguchi <yoichi@fore.com>
  * Copyright (C) January, 1998 Sergei Viznyuk <sv@phystech.com>
- * Copyright (C) 2005 Roy Marples <uberlord@gentoo.org>
- * Copyright (C) 2005 Simon Kelley <simon@thekelleys.org.uk>
+ * Copyright (C) 2005 - 2006 Roy Marples <uberlord@gentoo.org>
+ * Copyright (C) 2005 - 2006 Simon Kelley <simon@thekelleys.org.uk>
  * 
  * dhcpcd is an RFC2131 and RFC1541 compliant DHCP client daemon.
  *
@@ -102,7 +102,7 @@ void print_version()
 DHCP Client Daemon v."VERSION"\n\
 Copyright (C) 1996 - 1997 Yoichi Hariguchi <yoichi@fore.com>\n\
 Copyright (C) January, 1998 Sergei Viznyuk <sv@phystech.com>\n\
-Copyright (C) 2005 Roy Marples <uberlord@gentoo.org>\n\
+Copyright (C) 2005 - 2006 Roy Marples <uberlord@gentoo.org>\n\
                    Simon Kelley <simon@thekelleys.org.uk>\n\
 Location: http://developer.berlios.de/projects/dhcpcd/\n\n");
 }
