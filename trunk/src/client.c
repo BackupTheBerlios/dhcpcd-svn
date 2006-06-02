@@ -1167,6 +1167,9 @@ void *dhcpBound()
 	  if (FD_ISSET(dhcpSocket, &rset))
 	    while (recvfrom(dhcpSocket,(void *)foobuf,sizeof(foobuf),0,NULL,NULL) != -1 );
 	}
+
+      /* Sleep for a second so we don't gobble CPU time */
+      sleep(1);
     }
 }
 /*****************************************************************************/
