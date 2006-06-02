@@ -1,3 +1,8 @@
+02 Jun 2006; Roy Marples <uberlord@gentoo.org>
+
+   Setup a siglongjmp for SIGTERM so we can execute external programs
+   safely - like resolvconf -d.
+
 ** dhcpcd-2.0.5 Released
 
 21 Apr 2006; Roy Marples <uberlord@gentoo.org>

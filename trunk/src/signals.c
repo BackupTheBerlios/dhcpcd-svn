@@ -43,6 +43,8 @@ extern jmp_buf		env;
 extern void		*(*currState)();
 extern int		execOnStop;
 
+jmp_buf			jmpTerm;
+
 /*****************************************************************************/
 void killPid(sig)
 int sig;
@@ -127,14 +129,8 @@ int sig;
 	}
 	logger(LOG_ERR, "terminating on signal %d",sig);
     }
-  if (!Persistent || sig != SIGTERM)
-    {
-      /* Disable execing programs on SIGTERM as if any services get restarted then
-       * they get hung and are un-useable even though they do get restarted and
-       * apparently without error. Fix this, as it as a dhcpcd error! */
-      if (sig == SIGTERM) execOnStop = 0;
-      dhcpStop();
-    }
+  if (sig == SIGTERM) siglongjmp(jmpTerm, 1);
+  if (!Persistent) dhcpStop();
   deletePidFile();
   exit(sig);
 }
@@ -148,4 +144,11 @@ void signalSetup()
   action.sa_flags = 0;
   for (i=1;i<16;i++) sigaction(i,&action,NULL);
   sigaction(SIGCHLD,&action,NULL);
+
+  /* We do this so that we can call external programs safely from a SIGTERM */
+  if ( sigsetjmp(jmpTerm, 1) ) {
+    if (!Persistent) dhcpStop();
+    deletePidFile();
+    exit(SIGTERM);
+  }
 }

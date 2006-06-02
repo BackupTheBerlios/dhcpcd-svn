@@ -99,8 +99,6 @@ int	readDhcpCache();
 int	deleteDhcpCache();
 void	execute_on_change(char *prm);
 
-int	execOnStop	= 1;
-
 int			dhcpSocket;
 int			udpFooSocket;
 int			prev_ip_addr;
@@ -1306,8 +1304,6 @@ tsc:
     rename(nis_file_sv, nis_file);
   if ( ntp_renamed )
     rename(ntp_file_sv, ntp_file);
-
-  if ( ! execOnStop ) return &dhcpStart;
 
   if ( ! stat("/sbin/resolvconf", &buf) )
     {
