@@ -1168,8 +1168,8 @@ void *dhcpBound()
 	    while (recvfrom(dhcpSocket,(void *)foobuf,sizeof(foobuf),0,NULL,NULL) != -1 );
 	}
 
-      /* Sleep for a second so we don't gobble CPU time */
-      sleep(1);
+      /* Sleep for 2 seconds so we don't gobble CPU time */
+      sleep(2);
     }
 }
 /*****************************************************************************/

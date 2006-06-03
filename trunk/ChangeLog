@@ -1,6 +1,6 @@
 02 Jun 2006; Roy Marples <uberlord@gentoo.org>
 
-   Added a sleep of 1 second to dhcpBound so we don't gobble CPU time
+   Added a sleep of 2 seconds to dhcpBound so we don't gobble CPU time
    when there is loads of network traffic being passed around.
 
    Setup a siglongjmp for SIGTERM so we can execute external programs
