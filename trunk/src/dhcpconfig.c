@@ -112,7 +112,7 @@ char *prm;
   if ( fork() == 0 )
 #endif
     {
-      char *argc[3],exec_on_change[128];
+      char *argc[4],exec_on_change[128];
       
       if ( Cfilename )
 	snprintf(exec_on_change,sizeof(exec_on_change),Cfilename);
@@ -122,9 +122,12 @@ char *prm;
       argc[1]=hostinfo_file;
       argc[2]=prm;
       argc[3]=NULL;
-      if ( execve(exec_on_change,argc,ProgramEnviron) && errno != ENOENT )
-	logger(LOG_ERR,"error executing \"%s %s %s\": %s",
-	exec_on_change,hostinfo_file,prm,strerror(errno));
+      logger(LOG_DEBUG, "about to exec \"%s %s %s\"", exec_on_change,
+	     hostinfo_file, prm);
+      if ( execve(exec_on_change,argc,ProgramEnviron) && 
+	   ( errno != ENOENT || Cfilename ) )
+	logger(LOG_ERR, "error executing \"%s %s %s\": %s",
+	       exec_on_change,hostinfo_file, prm, strerror(errno));
       exit(0);
     }
 }
@@ -785,19 +788,7 @@ FQDNHOSTNAME='%s'\n",
     }
   else
     logger(LOG_ERR,"dhcpConfig: fopen %s: %s", hostinfo_file, strerror(errno));
-#if 0
-  if ( Cfilename )
-    if ( fork() == 0 )
-      {
-	char *argc[2];
-	argc[0]=Cfilename;
-	argc[1]=NULL;
-	if ( execve(Cfilename,argc,ProgramEnviron) )
-	  logger(LOG_ERR,"error executing \"%s\": %s",
-	  Cfilename,strerror(errno));
-	exit(0);
-      }
-#endif
+  
   if ( DhcpIface.ciaddr == prev_ip_addr )
     execute_on_change("up");
   else					/* IP address has changed */
@@ -805,11 +796,7 @@ FQDNHOSTNAME='%s'\n",
       execute_on_change("new");
       prev_ip_addr=DhcpIface.ciaddr;
     }
-/*  if ( *(unsigned int *)DhcpOptions.val[dhcpIPaddrLeaseTime] == 0xffffffff )
-    {
-      logger(LOG_INFO,"infinite IP address lease time. Exiting");
-      exit(0);
-    } */
+  
   return 0;
 }
 /*****************************************************************************/

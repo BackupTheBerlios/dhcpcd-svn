@@ -198,8 +198,7 @@ prgs: switch ( argc[i][s] )
 	    if ((LogLevel = log_to_level(argc[i])) < 0)
 		    LogLevel = atoi(argc[i]);
 	    i++;
-	    s=1;
-	    goto prgs;
+	    break;
 	  case 'd':
 	    s++;
 	    LogLevel = log_to_level("LOG_DEBUG");

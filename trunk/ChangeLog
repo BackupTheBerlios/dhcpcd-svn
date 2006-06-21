@@ -1,3 +1,14 @@
+21 Jun 2006; Roy Marples <uberlord@gentoo.org>
+
+   Always report exec errors when -c is used and increase arg count
+   Gentoo bug #137478 thanks to JoseJX and lu_zero.
+   
+   Use a unsigned int instead of an int when comparing alarm time > 0.
+
+   Fixed man page by putting the option -a against its description.
+
+   Fixed segfault when using the -v option.
+
 ** dhcpcd-2.0.6 Released
 
 02 Jun 2006; Roy Marples <uberlord@gentoo.org>

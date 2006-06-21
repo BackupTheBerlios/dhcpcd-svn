@@ -1122,7 +1122,8 @@ void (*buildDhcpMsg)(unsigned);
 /*****************************************************************************/
 void *dhcpBound()
 {
-  int i, maxfd;
+  unsigned int i;
+  int maxfd;
   fd_set rset;
   char foobuf[512];
 
@@ -1175,7 +1176,7 @@ void *dhcpBound()
 /*****************************************************************************/
 void *dhcpRenew()
 {
-  int i;
+  unsigned int i;
   if ( sigsetjmp(env,0xffff) ) return &dhcpRebind;
   i = ReqSentTime+ntohl(*(unsigned int *)DhcpOptions.val[dhcpT2value])-time(NULL);
   if ( i > 0 )
@@ -1205,7 +1206,7 @@ void *dhcpRenew()
 /*****************************************************************************/
 void *dhcpRebind()
 {
-  int i;
+  unsigned int i;
   if ( sigsetjmp(env,0xffff) ) return &dhcpStop;
   i = ReqSentTime+ntohl(*(unsigned int *)DhcpOptions.val[dhcpIPaddrLeaseTime])-time(NULL);
   if ( i > 0 )
