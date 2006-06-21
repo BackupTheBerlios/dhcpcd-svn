@@ -14,7 +14,6 @@ Make sure your kernel is compiled with support for SOCK_PACKET
 ./configure --prefix=/
 Please note the GNU default installation --prefix=/usr/local
 is not what most users want for dhcpcd installation.
-Edit Makefile to customize compile time options.
 Do 'make' followed by 'make install'.
 To enable dhcpcd error logging add the following line to your
 /etc/syslog.conf file:
