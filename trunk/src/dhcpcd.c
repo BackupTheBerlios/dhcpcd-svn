@@ -99,12 +99,12 @@ extern	int	LogLevel;
 void print_version()
 {
   fprintf(stderr,"\
-DHCP Client Daemon v."VERSION"\n\
-Copyright (C) 1996 - 1997 Yoichi Hariguchi <yoichi@fore.com>\n\
-Copyright (C) January, 1998 Sergei Viznyuk <sv@phystech.com>\n\
-Copyright (C) 2005 - 2006 Roy Marples <uberlord@gentoo.org>\n\
-                   Simon Kelley <simon@thekelleys.org.uk>\n\
-Location: http://developer.berlios.de/projects/dhcpcd/\n\n");
+	  DHCP Client Daemon v."VERSION"\n\
+	  Copyright (C) 1996 - 1997 Yoichi Hariguchi <yoichi@fore.com>\n\
+	  Copyright (C) January, 1998 Sergei Viznyuk <sv@phystech.com>\n\
+	  Copyright (C) 2005 - 2006 Roy Marples <uberlord@gentoo.org>\n\
+	  Simon Kelley <simon@thekelleys.org.uk>\n\
+	  Location: http://developer.berlios.de/projects/dhcpcd/\n\n");
 }
 /*****************************************************************************/
 void checkIfAlreadyRunning()
@@ -116,14 +116,14 @@ void checkIfAlreadyRunning()
   if ( o == -1 ) return;
   close(o);
   fprintf(stderr,"\
-****  %s: already running\n\
-****  %s: if not then delete %s file\n",ProgramName,ProgramName,pidfile);
+	  ****  %s: already running\n\
+	  ****  %s: if not then delete %s file\n",ProgramName,ProgramName,pidfile);
   exit(1);
 }
 /*****************************************************************************/
 int main(argn,argc,argv)
-int argn;
-char *argc[],*argv[];
+    int argn;
+    char *argc[],*argv[];
 {
   int killFlag		=	0;
   int versionFlag	=	0;
@@ -133,16 +133,16 @@ char *argc[],*argv[];
   int j;
   char *FQDNOption	=	NULL;
 
-/*
- * Ensure that fds 0, 1, 2 are open, to /dev/null if nowhere else.
- * This way we can close 0, 1, 2 after forking the daemon without clobbering
- * a fd that we are using (such as our sockets). This is necessary if
- * this program is run from init scripts where 0, 1, and/or 2 may be closed.
- */
- j=open("/dev/null",O_RDWR);
- while ( j < 2 && j >= 0 ) j = dup(j);
- if ( j > 2 ) close(j);
- 
+  /*
+   * Ensure that fds 0, 1, 2 are open, to /dev/null if nowhere else.
+   * This way we can close 0, 1, 2 after forking the daemon without clobbering
+   * a fd that we are using (such as our sockets). This is necessary if
+   * this program is run from init scripts where 0, 1, and/or 2 may be closed.
+   */
+  j=open("/dev/null",O_RDWR);
+  while ( j < 2 && j >= 0 ) j = dup(j);
+  if ( j > 2 ) close(j);
+
   if ( geteuid() )
     {
       fprintf(stderr,"%s: not a superuser\n",argc[0]);
@@ -151,270 +151,270 @@ char *argc[],*argv[];
 
   while ( argc[i] )
     if ( argc[i][0]=='-' )
-prgs: switch ( argc[i][s] )
+      prgs: switch ( argc[i][s] )
 	{
 	  char *tmp;
 	  long m;
-	  case 0:
-	    i++;
-	    s=1;
-	    break;
-	  case 'a':
-	    s++;
-	    DoARP = 0;
-	    goto prgs;
-	  case 'p':
-	    s++;
-	    Persistent = 1;
-	    goto prgs;
-	  case 'k':
-	    s++;
-	    killFlag=SIGHUP;
-	    goto prgs;
-	  case 'm':
-	    if ( argc[i][s+1] ) goto usage;
-	    i++;
-	    if ( ! argc[i] ) goto usage;
-	    errno = 0;
-	    m=strtol(argc[i], &tmp, 0);
-	    if (argc[i][0] == '\0' || *tmp != '\0' ) goto usage;
-	    if ((errno == ERANGE &&
-			(m == LONG_MAX || m == LONG_MIN )) ||
-		    (m > INT_MAX || m < INT_MIN))
-		goto usage;
-	    RouteMetric=m;
-	    if (RouteMetric < INT_MAX) RouteMetric++;
-	    i++;
-	    s=1;
-	    break;
-	  case 'n':
-	    s++;
-	    killFlag=SIGALRM;
-	    goto prgs;
-	  case 'v':
-	    if ( argc[i][s+1] ) goto usage;
-	    i++;
-	    if ( ! argc[i] ) goto usage;
-	    if ((LogLevel = log_to_level(argc[i])) < 0)
-		    LogLevel = atoi(argc[i]);
-	    i++;
-	    break;
-	  case 'd':
-	    s++;
-	    LogLevel = log_to_level("LOG_DEBUG");
-	    break;
-	  case 'r':
-	    s++;
-	    BeRFC1541=1;
-	    goto prgs;
-	  case 'D':
-	    s++;
-	    SetDomainName=1;
-	    goto prgs;
-	  case 'H':
-	    s++;
-	    SetHostName=1;
-	    goto prgs;
-	  case 'R':
-	    s++;
-	    ReplResolvConf=0;
-	    goto prgs;
-	  case 'Y':
-	    s++;
-	    ReplNISConf=0;
-	    goto prgs;
-	  case 'N':
-	    s++;
-	    ReplNTPConf=0;
-	    goto prgs;
-	  case 'V':
-	    s++;
-	    versionFlag=1;
-	    goto prgs;
-	  case 'c':
-	    if ( argc[i][s+1] ) goto usage;
-	    i++;
-	    Cfilename=argc[i++];
-	    if ( Cfilename == NULL || Cfilename[0] == '-' ) goto usage;
-	    s=1;
-	    break;
-	  case 'L':
-	    if ( argc[i][s+1] ) goto usage;
-	    i++;
-	    ConfigDir=argc[i++];
-	    if ( ConfigDir == NULL || ConfigDir[0] != '/' ) goto usage;
-	    s=1;
-	    break;
-	  case 'e':
-	    if (argc[i][s+1] ) goto usage;
-	    i++;
-	    etcDir=argc[i++];
-	    if (etcDir == NULL || etcDir[0] != '/' ) goto usage;
-	    s=1;
-	    break;
+	case 0:
+	  i++;
+	  s=1;
+	  break;
+	case 'a':
+	  s++;
+	  DoARP = 0;
+	  goto prgs;
+	case 'p':
+	  s++;
+	  Persistent = 1;
+	  goto prgs;
+	case 'k':
+	  s++;
+	  killFlag=SIGHUP;
+	  goto prgs;
+	case 'm':
+	  if ( argc[i][s+1] ) goto usage;
+	  i++;
+	  if ( ! argc[i] ) goto usage;
+	  errno = 0;
+	  m=strtol(argc[i], &tmp, 0);
+	  if (argc[i][0] == '\0' || *tmp != '\0' ) goto usage;
+	  if ((errno == ERANGE &&
+	       (m == LONG_MAX || m == LONG_MIN )) ||
+	      (m > INT_MAX || m < INT_MIN))
+	    goto usage;
+	  RouteMetric=m;
+	  if (RouteMetric < INT_MAX) RouteMetric++;
+	  i++;
+	  s=1;
+	  break;
+	case 'n':
+	  s++;
+	  killFlag=SIGALRM;
+	  goto prgs;
+	case 'v':
+	  if ( argc[i][s+1] ) goto usage;
+	  i++;
+	  if ( ! argc[i] ) goto usage;
+	  if ((LogLevel = log_to_level(argc[i])) < 0)
+	    LogLevel = atoi(argc[i]);
+	  i++;
+	  break;
+	case 'd':
+	  s++;
+	  LogLevel = log_to_level("LOG_DEBUG");
+	  break;
+	case 'r':
+	  s++;
+	  BeRFC1541=1;
+	  goto prgs;
+	case 'D':
+	  s++;
+	  SetDomainName=1;
+	  goto prgs;
+	case 'H':
+	  s++;
+	  SetHostName=1;
+	  goto prgs;
+	case 'R':
+	  s++;
+	  ReplResolvConf=0;
+	  goto prgs;
+	case 'Y':
+	  s++;
+	  ReplNISConf=0;
+	  goto prgs;
+	case 'N':
+	  s++;
+	  ReplNTPConf=0;
+	  goto prgs;
+	case 'V':
+	  s++;
+	  versionFlag=1;
+	  goto prgs;
+	case 'c':
+	  if ( argc[i][s+1] ) goto usage;
+	  i++;
+	  Cfilename=argc[i++];
+	  if ( Cfilename == NULL || Cfilename[0] == '-' ) goto usage;
+	  s=1;
+	  break;
+	case 'L':
+	  if ( argc[i][s+1] ) goto usage;
+	  i++;
+	  ConfigDir=argc[i++];
+	  if ( ConfigDir == NULL || ConfigDir[0] != '/' ) goto usage;
+	  s=1;
+	  break;
+	case 'e':
+	  if (argc[i][s+1] ) goto usage;
+	  i++;
+	  etcDir=argc[i++];
+	  if (etcDir == NULL || etcDir[0] != '/' ) goto usage;
+	  s=1;
+	  break;
 #if 0
-	  case 'M':
-	    if ( argc[i][s+1] ) goto usage;
-	    i++;
-	    if ( argc[i] == NULL ) goto usage;
-	    if ( isxdigit(argc[i][0]) && isxdigit(argc[i][1]) && argc[i][2] == ':' )
-	      ClientMACaddr[0] = 16*(argc[i][0]>64?(toupper(argc[i][0])-55):(argc[i][0]-48)) +
-	      (argc[i][1]>64?(toupper(argc[i][1])-55):(argc[i][1]-48));
-	    else
-	      goto usage;
-	    if ( isxdigit(argc[i][3]) && isxdigit(argc[i][4]) && argc[i][5] == ':' )
-	      ClientMACaddr[1] = 16*(argc[i][3]>64?(toupper(argc[i][3])-55):(argc[i][3]-48)) +
-	      (argc[i][4]>64?(toupper(argc[i][4])-55):(argc[i][4]-48));
-	    else
-	      goto usage;
-	    if ( isxdigit(argc[i][6]) && isxdigit(argc[i][7]) && argc[i][8] == ':' )
-	      ClientMACaddr[2] = 16*(argc[i][6]>64?(toupper(argc[i][6])-55):(argc[i][6]-48)) +
-	      (argc[i][7]>64?(toupper(argc[i][7])-55):(argc[i][7]-48));
-	    else
-	      goto usage;
-	    if ( isxdigit(argc[i][9]) && isxdigit(argc[i][10]) && argc[i][11] == ':' )
-	      ClientMACaddr[3] = 16*(argc[i][9]>64?(toupper(argc[i][9])-55):(argc[i][9]-48)) +
-	      (argc[i][10]>64?(toupper(argc[i][10])-55):(argc[i][10]-48));
-	    else
-	      goto usage;
-	    if ( isxdigit(argc[i][12]) && isxdigit(argc[i][13]) && argc[i][14] == ':' )
-	      ClientMACaddr[4] = 16*(argc[i][12]>64?(toupper(argc[i][12])-55):(argc[i][12]-48)) +
-	      (argc[i][13]>64?(toupper(argc[i][13])-55):(argc[i][13]-48));
-	    else
-	      goto usage;
-	    if ( isxdigit(argc[i][15]) && isxdigit(argc[i][16]) )
-	      ClientMACaddr[5] = 16*(argc[i][15]>64?(toupper(argc[i][15])-55):(argc[i][15]-48)) +
-	      (argc[i][16]>64?(toupper(argc[i][16])-55):(argc[i][16]-48));
-	    else
-	      goto usage;
-	    s=1;
-	    i++;
-	    ClientMACaddr_ind=1;
-	    break;
+	case 'M':
+	  if ( argc[i][s+1] ) goto usage;
+	  i++;
+	  if ( argc[i] == NULL ) goto usage;
+	  if ( isxdigit(argc[i][0]) && isxdigit(argc[i][1]) && argc[i][2] == ':' )
+	    ClientMACaddr[0] = 16*(argc[i][0]>64?(toupper(argc[i][0])-55):(argc[i][0]-48)) +
+									   (argc[i][1]>64?(toupper(argc[i][1])-55):(argc[i][1]-48));
+	  else
+	    goto usage;
+	  if ( isxdigit(argc[i][3]) && isxdigit(argc[i][4]) && argc[i][5] == ':' )
+	    ClientMACaddr[1] = 16*(argc[i][3]>64?(toupper(argc[i][3])-55):(argc[i][3]-48)) +
+									   (argc[i][4]>64?(toupper(argc[i][4])-55):(argc[i][4]-48));
+	  else
+	    goto usage;
+	  if ( isxdigit(argc[i][6]) && isxdigit(argc[i][7]) && argc[i][8] == ':' )
+	    ClientMACaddr[2] = 16*(argc[i][6]>64?(toupper(argc[i][6])-55):(argc[i][6]-48)) +
+									   (argc[i][7]>64?(toupper(argc[i][7])-55):(argc[i][7]-48));
+	  else
+	    goto usage;
+	  if ( isxdigit(argc[i][9]) && isxdigit(argc[i][10]) && argc[i][11] == ':' )
+	    ClientMACaddr[3] = 16*(argc[i][9]>64?(toupper(argc[i][9])-55):(argc[i][9]-48)) +
+									   (argc[i][10]>64?(toupper(argc[i][10])-55):(argc[i][10]-48));
+	  else
+	    goto usage;
+	  if ( isxdigit(argc[i][12]) && isxdigit(argc[i][13]) && argc[i][14] == ':' )
+	    ClientMACaddr[4] = 16*(argc[i][12]>64?(toupper(argc[i][12])-55):(argc[i][12]-48)) +
+									     (argc[i][13]>64?(toupper(argc[i][13])-55):(argc[i][13]-48));
+	  else
+	    goto usage;
+	  if ( isxdigit(argc[i][15]) && isxdigit(argc[i][16]) )
+	    ClientMACaddr[5] = 16*(argc[i][15]>64?(toupper(argc[i][15])-55):(argc[i][15]-48)) +
+									     (argc[i][16]>64?(toupper(argc[i][16])-55):(argc[i][16]-48));
+	  else
+	    goto usage;
+	  s=1;
+	  i++;
+	  ClientMACaddr_ind=1;
+	  break;
 #endif
-	  case 'i':
-	    if ( argc[i][s+1] ) goto usage;
-	    i++;
-	    ClassID=argc[i++];
-	    if ( ClassID == NULL || ClassID[0] == '-' ) goto usage;
-	    s=1;
-	    if ( (ClassID_len=strlen(ClassID)) < CLASS_ID_MAX_LEN+1 ) break;
-	    fprintf(stderr,"****  %s: too long ClassID string: strlen=%d\n",
-	    argc[0],ClassID_len);
+	case 'i':
+	  if ( argc[i][s+1] ) goto usage;
+	  i++;
+	  ClassID=argc[i++];
+	  if ( ClassID == NULL || ClassID[0] == '-' ) goto usage;
+	  s=1;
+	  if ( (ClassID_len=strlen(ClassID)) < CLASS_ID_MAX_LEN+1 ) break;
+	  fprintf(stderr,"****  %s: too long ClassID string: strlen=%d\n",
+		  argc[0],ClassID_len);
+	  goto usage;
+	case 'I':
+	  if ( argc[i][s+1] ) goto usage;
+	  i++;
+	  ClientID=(unsigned char *)argc[i++];
+	  if ( ClientID == NULL || ClientID[0] == '-' ) goto usage;
+	  s=1;
+	  if ( (ClientID_len=strlen((char *)ClientID)) < CLIENT_ID_MAX_LEN+1 )
+	    break;
+	  fprintf(stderr,"****  %s: too long ClientID string: strlen=%d\n",
+		  argc[0],ClientID_len);
+	  goto usage;
+	case 'h':
+	  if ( argc[i][s+1] ) goto usage;
+	  i++;
+	  HostName=argc[i++];
+	  if ( HostName == NULL || HostName[0] == '-' ) goto usage;
+	  s=1;
+	  if ( (HostName_len=strlen(HostName)+1) < HOSTNAME_MAX_LEN ) break;
+	  fprintf(stderr,"****  %s: too long HostName string: strlen=%d\n",
+		  argc[0],HostName_len);
+	  break;
+	case 'F':
+	  if ( argc[i][s+1] ) goto usage;
+	  i++;
+	  FQDNOption=argc[i++];
+	  if ( FQDNOption == NULL || FQDNOption[0] == '-' ) goto usage;
+	  if ( strcmp(FQDNOption,"none") == 0 )
+	    SetFQDNHostName=FQDNnone;
+	  else if ( strcmp(FQDNOption,"ptr") == 0 )
+	    SetFQDNHostName=FQDNptr;
+	  else if ( strcmp(FQDNOption,"both") == 0 )
+	    SetFQDNHostName=FQDNboth;
+	  else
 	    goto usage;
-	  case 'I':
-	    if ( argc[i][s+1] ) goto usage;
-	    i++;
-	    ClientID=(unsigned char *)argc[i++];
-	    if ( ClientID == NULL || ClientID[0] == '-' ) goto usage;
-	    s=1;
-	    if ( (ClientID_len=strlen((char *)ClientID)) < CLIENT_ID_MAX_LEN+1 )
-		break;
-	    fprintf(stderr,"****  %s: too long ClientID string: strlen=%d\n",
-	    argc[0],ClientID_len);
+	  s=1;
+	  break;
+	case 't':
+	  if ( argc[i][s+1] ) goto usage;
+	  i++;
+	  if ( argc[i] )
+	    TimeOut=atol(argc[i++]);
+	  else
 	    goto usage;
-	  case 'h':
-	    if ( argc[i][s+1] ) goto usage;
-	    i++;
-	    HostName=argc[i++];
-	    if ( HostName == NULL || HostName[0] == '-' ) goto usage;
-	    s=1;
-	    if ( (HostName_len=strlen(HostName)+1) < HOSTNAME_MAX_LEN ) break;
-	    fprintf(stderr,"****  %s: too long HostName string: strlen=%d\n",
-	    argc[0],HostName_len);
-	    break;
-	  case 'F':
-	    if ( argc[i][s+1] ) goto usage;
-	    i++;
-	    FQDNOption=argc[i++];
-	    if ( FQDNOption == NULL || FQDNOption[0] == '-' ) goto usage;
-	    if ( strcmp(FQDNOption,"none") == 0 )
-	      SetFQDNHostName=FQDNnone;
-	    else if ( strcmp(FQDNOption,"ptr") == 0 )
-	      SetFQDNHostName=FQDNptr;
-	    else if ( strcmp(FQDNOption,"both") == 0 )
-	      SetFQDNHostName=FQDNboth;
-	    else
-	      goto usage;
-	    s=1;
-	    break;
-	  case 't':
-	    if ( argc[i][s+1] ) goto usage;
-	    i++;
-	    if ( argc[i] )
-	      TimeOut=atol(argc[i++]);
-	    else
-	      goto usage;
-	    s=1;
-	    if ( TimeOut >= 0 ) break;
+	  s=1;
+	  if ( TimeOut >= 0 ) break;
+	  goto usage;
+	case 'w':
+	  if ( argc[i][s+1] ) goto usage;
+	  i++;
+	  if ( argc[i] )
+	    Window=atol(argc[i++]);
+	  else
 	    goto usage;
-	  case 'w':
-	    if ( argc[i][s+1] ) goto usage;
-            i++;
-	    if ( argc[i] )
-	      Window=atol(argc[i++]);
-            else
-	      goto usage;
-	    s=1;
-	    if ( Window >= 0 ) break;
+	  s=1;
+	  if ( Window >= 0 ) break;
+	  goto usage;
+	case 's':
+	  if ( argc[i][s+1] ) goto usage;
+	  i++;
+	  if ( argc[i] && inet_aton(argc[i],&inform_ipaddr) )
+	    i++;
+	  else
+	    memset(&inform_ipaddr,0,sizeof(inform_ipaddr));
+	  currState = &dhcpInform;
+	  s=1;
+	  break;
+	case 'G':
+	  if ( argc[i][s+1] ) goto usage;
+	  SetDHCPDefaultRoutes=0;
+	  i++;
+	  if ( argc[i] && inet_aton(argc[i],&default_router) )
+	    i++;
+	  else
+	    memset(&default_router,0,sizeof(default_router));
+	  s=1;
+	  break;
+	case 'B':
+	  s++;
+	  BroadcastResp=1;
+	  goto prgs;
+	case 'C':
+	  s++;
+	  DoCheckSum=1;
+	  goto prgs;
+	case 'T':
+	  s++;
+	  TestCase=1;
+	  goto prgs;
+	case 'S':
+	  s++;
+	  SendSecondDiscover=1;
+	  goto prgs;
+	case 'l':
+	  if ( argc[i][s+1] ) goto usage;
+	  i++;
+	  if ( argc[i] )
+	    LeaseTime=atol(argc[i++]);
+	  else
 	    goto usage;
-	  case 's':
-	    if ( argc[i][s+1] ) goto usage;
-	    i++;
-	    if ( argc[i] && inet_aton(argc[i],&inform_ipaddr) )
-	      i++;
-	    else
-	      memset(&inform_ipaddr,0,sizeof(inform_ipaddr));
-	    currState = &dhcpInform;
-	    s=1;
-	    break;
-	  case 'G':
-	    if ( argc[i][s+1] ) goto usage;
-	    SetDHCPDefaultRoutes=0;
-	    i++;
-	    if ( argc[i] && inet_aton(argc[i],&default_router) )
-	      i++;
-	    else
-	      memset(&default_router,0,sizeof(default_router));
-	    s=1;
-	    break;
-	  case 'B':
-	    s++;
-	    BroadcastResp=1;
-	    goto prgs;
-	  case 'C':
-	    s++;
-	    DoCheckSum=1;
-	    goto prgs;
-	  case 'T':
-	    s++;
-	    TestCase=1;
-	    goto prgs;
-	  case 'S':
-	    s++;
-	    SendSecondDiscover=1;
-	    goto prgs;
-	  case 'l':
-	    if ( argc[i][s+1] ) goto usage;
-	    i++;
-	    if ( argc[i] )
-	      LeaseTime=atol(argc[i++]);
-	    else
-	      goto usage;
-	    s=1;
-	    if ( LeaseTime > 0 ) break;
-	  case 'o':
-	    s++;
-	    DownIfaceOnStop=0;
-	    break;
-          default:
+	  s=1;
+	  if ( LeaseTime > 0 ) break;
+	case 'o':
+	  s++;
+	  DownIfaceOnStop=0;
+	  break;
+	default:
 usage:	    print_version();
 	    fprintf(stderr,
-"Usage: dhcpcd [-adknoprBCDHNRSTY] [-l leasetime] [-h hostname] [-t timeout]\n\
-       [-i vendorClassID] [-I ClientID] [-c filename] [-s [ipaddr]]\n\
-       [-w windowsize] [-L ConfigDir] [-G [gateway]] [-e etcDir]\n\
-       [-m routeMetric] [-F none|ptr|both]\n\
-       [-v logLevel] [interface]\n");
+		    "Usage: dhcpcd [-adknoprBCDHNRSTY] [-l leasetime] [-h hostname] [-t timeout]\n\
+		    [-i vendorClassID] [-I ClientID] [-c filename] [-s [ipaddr]]\n\
+		    [-w windowsize] [-L ConfigDir] [-G [gateway]] [-e etcDir]\n\
+		    [-m routeMetric] [-F none|ptr|both]\n\
+		    [-v logLevel] [interface]\n");
 	    exit(1);
 	}
     else
@@ -438,6 +438,7 @@ usage:	    print_version();
 	else
 	  s++;
     }
+
   ProgramName=argc[0];
   ProgramEnviron=argv;
   umask(022);

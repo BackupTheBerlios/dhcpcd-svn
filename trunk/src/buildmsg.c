@@ -48,11 +48,11 @@ extern	int		SetFQDNHostName;
 
 /*****************************************************************************/
 void buildDhcpDiscover(xid)
-unsigned xid;
+    unsigned xid;
 {
   register unsigned char *p = DhcpMsgSend->options + 4;
 
-/* build Ethernet header */
+  /* build Ethernet header */
   memset(&UdpIpMsgSend,0,sizeof(udpipMessage));
   memcpy(UdpIpMsgSend.ethhdr.ether_dhost,MAC_BCAST_ADDR,ETH_ALEN);
   memcpy(UdpIpMsgSend.ethhdr.ether_shost,ClientHwAddr,ETH_ALEN);
@@ -81,14 +81,14 @@ unsigned xid;
   if ( DhcpIface.ciaddr )
     {
       if ( BeRFC1541 )
-        DhcpMsgSend->ciaddr = DhcpIface.ciaddr;
+	DhcpMsgSend->ciaddr = DhcpIface.ciaddr;
       else
-        {
-          *p++ = dhcpRequestedIPaddr;
-          *p++ = 4;
-          memcpy(p,&DhcpIface.ciaddr,4);
-          p += 4; 
-        }
+	{
+	  *p++ = dhcpRequestedIPaddr;
+	  *p++ = 4;
+	  memcpy(p,&DhcpIface.ciaddr,4);
+	  p += 4; 
+	}
     }
   *p++ = dhcpIPaddrLeaseTime;
   *p++ = 4;
@@ -144,17 +144,17 @@ unsigned xid;
     }
   *p = endOption;
 
-/* build UDP/IP header */
+  /* build UDP/IP header */
   udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,0,INADDR_BROADCAST,
-  htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),sizeof(dhcpMessage));
+	   htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),sizeof(dhcpMessage));
 }
 /*****************************************************************************/
 void buildDhcpRequest(xid)
-unsigned xid;
+    unsigned xid;
 {
   register unsigned char *p = DhcpMsgSend->options + 4;
- 
-/* build Ethernet header */
+
+  /* build Ethernet header */
   memset(&UdpIpMsgSend,0,sizeof(udpipMessage));
   memcpy(UdpIpMsgSend.ethhdr.ether_dhost,MAC_BCAST_ADDR,ETH_ALEN);
   memcpy(UdpIpMsgSend.ethhdr.ether_shost,ClientHwAddr,ETH_ALEN);
@@ -250,13 +250,13 @@ unsigned xid;
     }
   *p = endOption;
 
-/* build UDP/IP header */
+  /* build UDP/IP header */
   udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,0,INADDR_BROADCAST,
-  htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),sizeof(dhcpMessage));
+	   htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),sizeof(dhcpMessage));
 }
 /*****************************************************************************/
 void buildDhcpRenew(xid)
-unsigned xid;
+    unsigned xid;
 {
   register unsigned char *p = DhcpMsgSend->options + 4;
   memset(&UdpIpMsgSend,0,sizeof(udpipMessage));
@@ -345,12 +345,12 @@ unsigned xid;
   *p = endOption;
 
   udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,
-  DhcpIface.ciaddr,DhcpIface.siaddr,
-  htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),sizeof(dhcpMessage));
+	   DhcpIface.ciaddr,DhcpIface.siaddr,
+	   htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),sizeof(dhcpMessage));
 }
 /*****************************************************************************/
 void buildDhcpRebind(xid)
-unsigned xid;
+    unsigned xid;
 {
   register unsigned char *p = DhcpMsgSend->options + 4;
   memset(&UdpIpMsgSend,0,sizeof(udpipMessage));
@@ -437,16 +437,16 @@ unsigned xid;
   *p = endOption;
 
   udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,
-  DhcpIface.ciaddr,INADDR_BROADCAST,
-  htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),sizeof(dhcpMessage));
+	   DhcpIface.ciaddr,INADDR_BROADCAST,
+	   htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),sizeof(dhcpMessage));
 }
 /*****************************************************************************/
 void buildDhcpReboot(xid)
-unsigned xid;
+    unsigned xid;
 {
   register unsigned char *p = DhcpMsgSend->options + 4;
- 
-/* build Ethernet header */
+
+  /* build Ethernet header */
   memset(&UdpIpMsgSend,0,sizeof(udpipMessage));
   memcpy(UdpIpMsgSend.ethhdr.ether_dhost,MAC_BCAST_ADDR,ETH_ALEN);
   memcpy(UdpIpMsgSend.ethhdr.ether_shost,ClientHwAddr,ETH_ALEN);
@@ -537,11 +537,11 @@ unsigned xid;
   *p = endOption;
 
   udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,0,INADDR_BROADCAST,
-  htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),sizeof(dhcpMessage));
+	   htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),sizeof(dhcpMessage));
 }
 /*****************************************************************************/
 void buildDhcpRelease(xid)
-unsigned xid;
+    unsigned xid;
 {
   register unsigned char *p = DhcpMsgSend->options + 4;
   memset(&UdpIpMsgSend,0,sizeof(udpipMessage));
@@ -572,12 +572,12 @@ unsigned xid;
   *p = endOption;
 
   udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,DhcpIface.ciaddr,
-  DhcpIface.siaddr,htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),
-  sizeof(dhcpMessage));
+	   DhcpIface.siaddr,htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),
+	   sizeof(dhcpMessage));
 }
 /*****************************************************************************/
 void buildDhcpDecline(xid)
-unsigned xid;
+    unsigned xid;
 {
   register unsigned char *p = DhcpMsgSend->options + 4;
   memset(&UdpIpMsgSend,0,sizeof(udpipMessage));
@@ -616,12 +616,12 @@ unsigned xid;
   *p = endOption;
 
   udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,0,
-  DhcpIface.siaddr,htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),
-  sizeof(dhcpMessage));
+	   DhcpIface.siaddr,htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),
+	   sizeof(dhcpMessage));
 }
 /*****************************************************************************/
 void buildDhcpInform(xid)
-unsigned xid;
+    unsigned xid;
 {
   register unsigned char *p = DhcpMsgSend->options + 4;
 
@@ -702,5 +702,5 @@ unsigned xid;
   *p = endOption;
 
   udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,0,INADDR_BROADCAST,
-  htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),sizeof(dhcpMessage));
+	   htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),sizeof(dhcpMessage));
 }

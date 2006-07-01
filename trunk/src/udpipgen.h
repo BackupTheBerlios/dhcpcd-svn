@@ -55,7 +55,7 @@ typedef struct udpiphdr
 } __attribute__((packed)) udpiphdr;
 
 void udpipgen(udpiphdr *udpip,unsigned int saddr,unsigned int daddr,
-unsigned short sport,unsigned short dport,unsigned short msglen);
+	      unsigned short sport,unsigned short dport,unsigned short msglen);
 int udpipchk(udpiphdr *udpip);
 
 #endif

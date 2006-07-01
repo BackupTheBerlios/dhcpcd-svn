@@ -47,7 +47,7 @@ jmp_buf			jmpTerm;
 
 /*****************************************************************************/
 void killPid(sig)
-int sig;
+    int sig;
 {
   FILE *fp;
   pid_t pid;
@@ -89,7 +89,7 @@ void deletePidFile()
 }
 /*****************************************************************************/
 void sigHandler(sig)
-int sig;
+    int sig;
 {
   if( sig == SIGCHLD )
     {
@@ -99,24 +99,24 @@ int sig;
   if ( sig == SIGALRM )
     {
       if ( currState == &dhcpBound )
-        siglongjmp(env,1); /* this timeout is T1 */
+	siglongjmp(env,1); /* this timeout is T1 */
       else
-        {
-          if ( currState == &dhcpRenew )
-            siglongjmp(env,2); /* this timeout is T2 */
-          else
+	{
+	  if ( currState == &dhcpRenew )
+	    siglongjmp(env,2); /* this timeout is T2 */
+	  else
 	    {
 	      if ( currState == &dhcpRebind )
-	        siglongjmp(env,3);  /* this timeout is dhcpIpLeaseTime */
+		siglongjmp(env,3);  /* this timeout is dhcpIpLeaseTime */
 	      else
 		{
 		  if ( currState == &dhcpReboot )
 		    siglongjmp(env,4);  /* failed to acquire the same IP address */
 		  else
-	            logger(LOG_ERR, "timed out waiting for a valid DHCP server response");
+		    logger(LOG_ERR, "timed out waiting for a valid DHCP server response");
 		}
 	    }
-        }
+	}
     }
   else
     {
@@ -127,7 +127,7 @@ int sig;
 	  /* otherwise 2.0 drops unsent packets. fixme: find a better way than sleep */
 	  sleep(1);
 	}
-	logger(LOG_ERR, "terminating on signal %d",sig);
+      logger(LOG_ERR, "terminating on signal %d",sig);
     }
   if (sig == SIGTERM) siglongjmp(jmpTerm, 1);
   if (!Persistent) dhcpStop();

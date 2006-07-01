@@ -90,7 +90,7 @@ int InitialDomainName_len=-1;
 
 /*****************************************************************************/
 char *cleanmetas(cstr) /* this is to clean single quotes out of DHCP strings */
-char *cstr;		/* replace single quotes with space */
+    char *cstr;		/* replace single quotes with space */
 {
   register char *c=cstr;
   do
@@ -101,39 +101,39 @@ char *cstr;		/* replace single quotes with space */
 
 /*****************************************************************************/
 void execute_on_change(prm)
-char *prm;
+    char *prm;
 {
   if (!have_info)
     return;
-  
+
 #ifdef EMBED
   if ( vfork() == 0 )
 #else
-  if ( fork() == 0 )
+    if ( fork() == 0 )
 #endif
-    {
-      char *argc[4],exec_on_change[128];
-      
-      if ( Cfilename )
-	snprintf(exec_on_change,sizeof(exec_on_change),Cfilename);
-      else
-	snprintf(exec_on_change,sizeof(exec_on_change),EXEC_ON_CHANGE);
-      argc[0]=exec_on_change;
-      argc[1]=hostinfo_file;
-      argc[2]=prm;
-      argc[3]=NULL;
-      logger(LOG_DEBUG, "about to exec \"%s %s %s\"", exec_on_change,
-	     hostinfo_file, prm);
-      if ( execve(exec_on_change,argc,ProgramEnviron) && 
-	   ( errno != ENOENT || Cfilename ) )
-	logger(LOG_ERR, "error executing \"%s %s %s\": %s",
-	       exec_on_change,hostinfo_file, prm, strerror(errno));
-      exit(0);
-    }
+      {
+	char *argc[4],exec_on_change[128];
+
+	if ( Cfilename )
+	  snprintf(exec_on_change,sizeof(exec_on_change),Cfilename);
+	else
+	  snprintf(exec_on_change,sizeof(exec_on_change),EXEC_ON_CHANGE);
+	argc[0]=exec_on_change;
+	argc[1]=hostinfo_file;
+	argc[2]=prm;
+	argc[3]=NULL;
+	logger(LOG_DEBUG, "about to exec \"%s %s %s\"", exec_on_change,
+	       hostinfo_file, prm);
+	if ( execve(exec_on_change,argc,ProgramEnviron) && 
+	     ( errno != ENOENT || Cfilename ) )
+	  logger(LOG_ERR, "error executing \"%s %s %s\": %s",
+		 exec_on_change,hostinfo_file, prm, strerror(errno));
+	exit(0);
+      }
 }
 /*****************************************************************************/
 unsigned long getgenmask(ip_in)		/* this is to guess genmask	*/
-unsigned long ip_in;			/* from network address		*/
+    unsigned long ip_in;			/* from network address		*/
 {
   unsigned long t,p=ntohl(ip_in);
   if ( IN_CLASSA(p) )
@@ -155,93 +155,96 @@ unsigned long ip_in;			/* from network address		*/
 }
 /*****************************************************************************/
 int setDefaultRoute(route_addr)
-char *route_addr;
+    char *route_addr;
 {
-struct	rtentry		rtent;
-struct	sockaddr_in	*p;
+  struct	rtentry		rtent;
+  struct	sockaddr_in	*p;
 
-memset(&rtent,0,sizeof(struct rtentry));
-p			=	(struct sockaddr_in *)&rtent.rt_dst;
-p->sin_family		=	AF_INET;
-p->sin_addr.s_addr	=	0;
-p			=	(struct sockaddr_in *)&rtent.rt_gateway;
-p->sin_family		=	AF_INET;
-memcpy(&p->sin_addr.s_addr,route_addr,4);
-p			=	(struct sockaddr_in *)&rtent.rt_genmask;
-p->sin_family		=	AF_INET;
-p->sin_addr.s_addr	=	0;
+  memset(&rtent,0,sizeof(struct rtentry));
+  p			=	(struct sockaddr_in *)&rtent.rt_dst;
+  p->sin_family		=	AF_INET;
+  p->sin_addr.s_addr	=	0;
+  p			=	(struct sockaddr_in *)&rtent.rt_gateway;
+  p->sin_family		=	AF_INET;
+  memcpy(&p->sin_addr.s_addr,route_addr,4);
+  p			=	(struct sockaddr_in *)&rtent.rt_genmask;
+  p->sin_family		=	AF_INET;
+  p->sin_addr.s_addr	=	0;
 #ifdef OLD_LINUX_VERSION
   rtent.rt_dev		=	IfName;
 #else
   rtent.rt_dev		=	IfNameExt;
 #endif
-rtent.rt_metric	        =	RouteMetric;
-rtent.rt_window		=	Window;
-rtent.rt_flags	        =	RTF_UP|RTF_GATEWAY|(Window ? RTF_WINDOW : 0);
-if ( ioctl(dhcpSocket,SIOCADDRT,&rtent) == -1 )
-  {
-    if ( errno == ENETUNREACH )    /* possibly gateway is over the bridge */
-      {                            /* try adding a route to gateway first */
-	memset(&rtent,0,sizeof(struct rtentry));
-	p			=	(struct sockaddr_in *)&rtent.rt_dst;
-	p->sin_family		=	AF_INET;
-	memcpy(&p->sin_addr.s_addr,route_addr,4);
-	p			=	(struct sockaddr_in *)&rtent.rt_gateway;
-	p->sin_family		=	AF_INET;
-	p->sin_addr.s_addr	=	0;
-	p			=	(struct sockaddr_in *)&rtent.rt_genmask;
-	p->sin_family		=	AF_INET;
-	p->sin_addr.s_addr	=	0xffffffff;
+  rtent.rt_metric	        =	RouteMetric;
+  rtent.rt_window		=	Window;
+  rtent.rt_flags	        =	RTF_UP|RTF_GATEWAY|(Window ? RTF_WINDOW : 0);
+  if ( ioctl(dhcpSocket,SIOCADDRT,&rtent) == -1 )
+    {
+      if ( errno == ENETUNREACH )    /* possibly gateway is over the bridge */
+	{                            /* try adding a route to gateway first */
+	  memset(&rtent,0,sizeof(struct rtentry));
+	  p			=	(struct sockaddr_in *)&rtent.rt_dst;
+	  p->sin_family		=	AF_INET;
+	  memcpy(&p->sin_addr.s_addr,route_addr,4);
+	  p			=	(struct sockaddr_in *)&rtent.rt_gateway;
+	  p->sin_family		=	AF_INET;
+	  p->sin_addr.s_addr	=	0;
+	  p			=	(struct sockaddr_in *)&rtent.rt_genmask;
+	  p->sin_family		=	AF_INET;
+	  p->sin_addr.s_addr	=	0xffffffff;
 #ifdef OLD_LINUX_VERSION
-	rtent.rt_dev		=	IfName;
+	  rtent.rt_dev		=	IfName;
 #else
-	rtent.rt_dev		=	IfNameExt;
+	  rtent.rt_dev		=	IfNameExt;
 #endif
-	rtent.rt_metric     =	  RouteMetric;
-	rtent.rt_flags      =	  RTF_UP|RTF_HOST;
-	if ( ioctl(dhcpSocket,SIOCADDRT,&rtent) == 0 )
-	  {
-	    memset(&rtent,0,sizeof(struct rtentry));
-	    p			=	(struct sockaddr_in *)&rtent.rt_dst;
-	    p->sin_family	=	AF_INET;
-	    p->sin_addr.s_addr	=	0;
-	    p			=	(struct sockaddr_in *)&rtent.rt_gateway;
-	    p->sin_family	=	AF_INET;
-	    memcpy(&p->sin_addr.s_addr,route_addr,4);
-	    p			=	(struct sockaddr_in *)&rtent.rt_genmask;
-	    p->sin_family	=	AF_INET;
-	    p->sin_addr.s_addr	=	0;
+	  rtent.rt_metric     =	  RouteMetric;
+	  rtent.rt_flags      =	  RTF_UP|RTF_HOST;
+	  if ( ioctl(dhcpSocket,SIOCADDRT,&rtent) == 0 )
+	    {
+	      memset(&rtent,0,sizeof(struct rtentry));
+	      p			=	(struct sockaddr_in *)&rtent.rt_dst;
+	      p->sin_family	=	AF_INET;
+	      p->sin_addr.s_addr	=	0;
+	      p			=	(struct sockaddr_in *)&rtent.rt_gateway;
+	      p->sin_family	=	AF_INET;
+	      memcpy(&p->sin_addr.s_addr,route_addr,4);
+	      p			=	(struct sockaddr_in *)&rtent.rt_genmask;
+	      p->sin_family	=	AF_INET;
+	      p->sin_addr.s_addr	=	0;
 #ifdef OLD_LINUX_VERSION
-	    rtent.rt_dev	=	IfName;
+	      rtent.rt_dev	=	IfName;
 #else
-	    rtent.rt_dev	=	IfNameExt;
+	      rtent.rt_dev	=	IfNameExt;
 #endif
-	    rtent.rt_metric	=	RouteMetric;
-	    rtent.rt_window	=	Window;
-	    rtent.rt_flags	=	RTF_UP|RTF_GATEWAY|(Window ? RTF_WINDOW : 0);
-	    if ( ioctl(dhcpSocket,SIOCADDRT,&rtent) == -1 )
-	      {
-		logger(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %s",strerror(errno));
-		return -1;
-	      }
-	  }
-      }
-    else
-      {
-	logger(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %s",strerror(errno));
-	return -1;
-      }
-  }
-return 0;
+	      rtent.rt_metric	=	RouteMetric;
+	      rtent.rt_window	=	Window;
+	      rtent.rt_flags	=	RTF_UP|RTF_GATEWAY|(Window ? RTF_WINDOW : 0);
+	      if ( ioctl(dhcpSocket,SIOCADDRT,&rtent) == -1 && errno != EEXIST )
+		{
+		  logger(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %s",strerror(errno));
+		  return -1;
+		}
+	    }
+	}
+      else
+	{
+	  if ( errno != EEXIST)
+	    {
+	      logger(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %s",strerror(errno));
+	      return -1;
+	    }
+	}
+    }
+  return 0;
 }
 
 int islink(char *file) {
-    char b[1];
-    int n = readlink(file, b, 1);
-    if (n == -1)
-	return 0;
-    else
-	return 1;
+  char b[1];
+  int n = readlink(file, b, 1);
+  if (n == -1)
+    return 0;
+  else
+    return 1;
 }
 
 /*****************************************************************************/
@@ -269,6 +272,7 @@ int dhcpConfig()
 #endif
   p->sin_family = AF_INET;
   p->sin_addr.s_addr = DhcpIface.ciaddr;
+  errno = 0;
   if ( ioctl(dhcpSocket,SIOCSIFADDR,&ifr) == -1 )  /* setting IP address */
     {
       logger(LOG_ERR,"dhcpConfig: ioctl SIOCSIFADDR: %s",strerror(errno));
@@ -310,7 +314,7 @@ int dhcpConfig()
   if ( ioctl(dhcpSocket,SIOCDELRT,&rtent) )
     logger(LOG_ERR,"dhcpConfig: ioctl SIOCDELRT: %s",strerror(errno));
 #endif
-  
+
   memset(&rtent,0,sizeof(struct rtentry));
   p			=	(struct sockaddr_in *)&rtent.rt_dst;
   p->sin_family		=	AF_INET;
@@ -325,7 +329,7 @@ int dhcpConfig()
   rtent.rt_dev		=	IfName;
   rtent.rt_metric     	=	RouteMetric;
   rtent.rt_flags      	=	RTF_UP;
-  if ( ioctl(dhcpSocket,SIOCADDRT,&rtent) )
+  if ( ioctl(dhcpSocket,SIOCADDRT,&rtent) && errno != EEXIST )
     logger(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %s",strerror(errno));
 
   for (i=0;i<DhcpOptions.len[staticRoute];i+=8)
@@ -352,7 +356,7 @@ int dhcpConfig()
       rtent.rt_dev	      =	  IfNameExt;
 #endif
       rtent.rt_metric     =	  RouteMetric;
-      if ( ioctl(dhcpSocket,SIOCADDRT,&rtent) )
+      if ( ioctl(dhcpSocket,SIOCADDRT,&rtent) && errno != EEXIST )
 	logger(LOG_ERR,"dhcpConfig: ioctl SIOCADDRT: %s",strerror(errno));
     }
 
@@ -377,10 +381,10 @@ int dhcpConfig()
 
   arpInform();
   logger(LOG_INFO,"your IP address = %u.%u.%u.%u",
-    ((unsigned char *)&DhcpIface.ciaddr)[0],
-    ((unsigned char *)&DhcpIface.ciaddr)[1],
-    ((unsigned char *)&DhcpIface.ciaddr)[2],
-    ((unsigned char *)&DhcpIface.ciaddr)[3]);
+	 ((unsigned char *)&DhcpIface.ciaddr)[0],
+	 ((unsigned char *)&DhcpIface.ciaddr)[1],
+	 ((unsigned char *)&DhcpIface.ciaddr)[2],
+	 ((unsigned char *)&DhcpIface.ciaddr)[3]);
   if ( ReplResolvConf && (DhcpOptions.len[domainName] || DhcpOptions.len[dns]))
     {
       if ( ! islink(resolv_file))
@@ -389,18 +393,19 @@ int dhcpConfig()
       struct stat buf;
       int resolvconf = 0;
       if ( ! stat("/sbin/resolvconf", &buf) ) {
-        resolvconf = 1;
+	logger(LOG_DEBUG, "sending DNS information to resolvconf");
+	resolvconf = 1;
 	char *arg = malloc(strlen("/sbin/resolvconf -a ")+strlen(IfName)+1);
 	snprintf(arg, strlen("/sbin/resolvconf -a ")+strlen(IfName)+1,
-	    "/sbin/resolvconf -a %s",IfName);
+		 "/sbin/resolvconf -a %s",IfName);
 	f=popen(arg,"w");
 	free(arg);
-        if ( !f )
-            logger(LOG_ERR,"dhcpConfig: popen: %s", strerror(errno));
+	if ( !f )
+	  logger(LOG_ERR,"dhcpConfig: popen: %s", strerror(errno));
       } else {
-        f=fopen(resolv_file, "w");
-        if ( !f )
-            logger(LOG_ERR,"dhcpConfig: fopen %s: %s", resolv_file, strerror(errno));
+	f=fopen(resolv_file, "w");
+	if ( !f )
+	  logger(LOG_ERR,"dhcpConfig: fopen %s: %s", resolv_file, strerror(errno));
       }
       if ( f ) 
 	{
@@ -411,26 +416,29 @@ int dhcpConfig()
 	  else if ( DhcpOptions.len[domainName] ) {
 	    fprintf(f,"search %s\n",(char *)DhcpOptions.val[domainName]);
 	  }
-	  
+
 	  for (i=0;i<DhcpOptions.len[dns];i+=4)
 	    fprintf(f,"nameserver %u.%u.%u.%u\n",
-	    ((unsigned char *)DhcpOptions.val[dns])[i],
-	    ((unsigned char *)DhcpOptions.val[dns])[i+1],
-	    ((unsigned char *)DhcpOptions.val[dns])[i+2],
-	    ((unsigned char *)DhcpOptions.val[dns])[i+3]);
-	
+		    ((unsigned char *)DhcpOptions.val[dns])[i],
+		    ((unsigned char *)DhcpOptions.val[dns])[i+1],
+		    ((unsigned char *)DhcpOptions.val[dns])[i+2],
+		    ((unsigned char *)DhcpOptions.val[dns])[i+3]);
+
 	  if (resolvconf)
-	    pclose(f);
+	    {
+	      logger(LOG_DEBUG, "resolvconf completed");
+	      pclose(f);
+	    }
 	  else
 	    fclose(f);
 	}
 
-   /* moved the next section of code from before to after we've created
-    * resolv.conf. See below for explanation. <poeml@suse.de>
-    * res_init() is normally called from within the first function of the
-    * resolver which is called. Here, we want resolv.conf to be
-    * reread. Otherwise, we won't be able to find out about our hostname,
-    * because the resolver won't notice the change in resolv.conf */
+      /* moved the next section of code from before to after we've created
+       * resolv.conf. See below for explanation. <poeml@suse.de>
+       * res_init() is normally called from within the first function of the
+       * resolver which is called. Here, we want resolv.conf to be
+       * reread. Otherwise, we won't be able to find out about our hostname,
+       * because the resolver won't notice the change in resolv.conf */
       (void)res_init();
     }
   if ( ReplNISConf && (DhcpOptions.len[nisDomainName] || DhcpOptions.len[nisServers]))
@@ -444,23 +452,23 @@ int dhcpConfig()
 	  char *prefix=NULL;
 	  fprintf(f, "# Generated by dhcpcd for interface %s\n", IfName);
 	  if ( DhcpOptions.len[nisDomainName] ) {
-	      if ( DhcpOptions.len[nisServers] ) {
-		prefix=(char *)malloc(DhcpOptions.len[nisDomainName] + 15);
-		sprintf(prefix, "domain %s server", (char *)DhcpOptions.val[nisDomainName]);
-	      }
-	      else
-		fprintf(f, "domain %s broadcast\n", (char *)DhcpOptions.val[nisDomainName]);
+	    if ( DhcpOptions.len[nisServers] ) {
+	      prefix=(char *)malloc(DhcpOptions.len[nisDomainName] + 15);
+	      sprintf(prefix, "domain %s server", (char *)DhcpOptions.val[nisDomainName]);
+	    }
+	    else
+	      fprintf(f, "domain %s broadcast\n", (char *)DhcpOptions.val[nisDomainName]);
 	  }
 	  else
-	      prefix=strdup("ypserver");
+	    prefix=strdup("ypserver");
 
 	  for (i=0;i<DhcpOptions.len[nisServers];i+=4)
 	    fprintf(f, "%s %u.%u.%u.%u\n", prefix,
-	    ((unsigned char *)DhcpOptions.val[nisServers])[i],
-	    ((unsigned char *)DhcpOptions.val[nisServers])[i+1],
-	    ((unsigned char *)DhcpOptions.val[nisServers])[i+2],
-	    ((unsigned char *)DhcpOptions.val[nisServers])[i+3]);
-	  
+		    ((unsigned char *)DhcpOptions.val[nisServers])[i],
+		    ((unsigned char *)DhcpOptions.val[nisServers])[i+1],
+		    ((unsigned char *)DhcpOptions.val[nisServers])[i+2],
+		    ((unsigned char *)DhcpOptions.val[nisServers])[i+3]);
+
 	  fclose(f);
 
 	  if (prefix) free(prefix);
@@ -474,41 +482,41 @@ int dhcpConfig()
 	ntp_renamed=1+rename(ntp_file, ntp_file_sv);
       f=fopen(ntp_file, "w");
       if ( f )
- 	{
- 	  int net, mask;
+	{
+	  int net, mask;
 	  int i;
 	  char addr[4*3+3*1+1];
 	  fprintf(f, "# Generated by dhcpcd for interface %s\n", IfName);
- 	  memcpy(&mask,DhcpOptions.val[subnetMask],4);
- 	  net = DhcpIface.ciaddr & mask;
+	  memcpy(&mask,DhcpOptions.val[subnetMask],4);
+	  net = DhcpIface.ciaddr & mask;
 
- 	  /* Note: Revise drift/log file names and stratum for local clock */
- 	  fprintf(f,"restrict default noquery notrust nomodify\n");
- 	  fprintf(f,"restrict 127.0.0.1\n");
-  
+	  /* Note: Revise drift/log file names and stratum for local clock */
+	  fprintf(f,"restrict default noquery notrust nomodify\n");
+	  fprintf(f,"restrict 127.0.0.1\n");
+
 	  for (i=0;i<DhcpOptions.len[ntpServers];i+=4)
-	  {
-	    snprintf(addr,sizeof(addr),"%u.%u.%u.%u",
-	    ((unsigned char *)DhcpOptions.val[ntpServers])[i],
-	    ((unsigned char *)DhcpOptions.val[ntpServers])[i+1],
-	    ((unsigned char *)DhcpOptions.val[ntpServers])[i+2],
-	    ((unsigned char *)DhcpOptions.val[ntpServers])[i+3]);
-	    fprintf(f,"restrict %s nomodify notrap noquery\nserver %s\n",addr,addr);
-	  }
- 	  
+	    {
+	      snprintf(addr,sizeof(addr),"%u.%u.%u.%u",
+		       ((unsigned char *)DhcpOptions.val[ntpServers])[i],
+		       ((unsigned char *)DhcpOptions.val[ntpServers])[i+1],
+		       ((unsigned char *)DhcpOptions.val[ntpServers])[i+2],
+		       ((unsigned char *)DhcpOptions.val[ntpServers])[i+3]);
+	      fprintf(f,"restrict %s nomodify notrap noquery\nserver %s\n",addr,addr);
+	    }
+
 	  fprintf(f, "driftfile /etc/ntp.drift\n");
- 	  fprintf(f, "logfile /var/log/ntp.log\n");
- 	  fclose(f);
- 	}
-       else
- 	logger(LOG_ERR,"dhcpConfig: fopen %s: %s", ntp_file, strerror(errno));
-     }
+	  fprintf(f, "logfile /var/log/ntp.log\n");
+	  fclose(f);
+	}
+      else
+	logger(LOG_ERR,"dhcpConfig: fopen %s: %s", ntp_file, strerror(errno));
+    }
   if ( ! DhcpOptions.len[hostName] )
     {
       hp=gethostbyaddr((char *)&DhcpIface.ciaddr,
-      sizeof(DhcpIface.ciaddr),AF_INET);
+		       sizeof(DhcpIface.ciaddr),AF_INET);
       if ( hp )
-        {
+	{
 	  dname=hp->h_name;
 	  while ( *dname > 32 )
 	    dname++;
@@ -516,7 +524,7 @@ int dhcpConfig()
 	  DhcpOptions.val[hostName]=(char *)malloc(dname_len+1);
 	  DhcpOptions.len[hostName]=dname_len;
 	  memcpy((char *)DhcpOptions.val[hostName],
-	    hp->h_name,dname_len);
+		 hp->h_name,dname_len);
 	  ((char *)DhcpOptions.val[hostName])[dname_len]=0;
 	  DhcpOptions.num++;
 	}
@@ -530,11 +538,11 @@ int dhcpConfig()
   if ( SetHostName || InitialHostName_len == 0 || ! strcmp(InitialHostName, "(none)") )
     {
       if ( DhcpOptions.len[hostName] )
-        {
+	{
 	  SetHostName = 1;
-          sethostname(DhcpOptions.val[hostName],DhcpOptions.len[hostName]);
+	  sethostname(DhcpOptions.val[hostName],DhcpOptions.len[hostName]);
 	  logger(LOG_INFO,"your hostname = %s",
-	      (char *)DhcpOptions.val[hostName]);
+		 (char *)DhcpOptions.val[hostName]);
 	}
     }
   if ( SetDomainName )
@@ -546,21 +554,21 @@ int dhcpConfig()
 	}
 #if 0
       if ( DhcpOptions.len[nisDomainName] )
-        {
-          setdomainname(DhcpOptions.val[nisDomainName],
-		      DhcpOptions.len[nisDomainName]);
+	{
+	  setdomainname(DhcpOptions.val[nisDomainName],
+			DhcpOptions.len[nisDomainName]);
 	  if ( DebugFlag )
 	    fprintf(stdout,"your domainname = %s\n",
-		(char *)DhcpOptions.val[nisDomainName]);
-        }
+		    (char *)DhcpOptions.val[nisDomainName]);
+	}
       else
-        {
+	{
 #endif
 	  if ( ! DhcpOptions.len[domainName] )
 	    {
 	      if ( ! hp )
 		hp=gethostbyaddr((char *)&DhcpIface.ciaddr,
-		sizeof(DhcpIface.ciaddr),AF_INET);
+				 sizeof(DhcpIface.ciaddr),AF_INET);
 	      if ( hp )
 		{
 		  dname=hp->h_name;
@@ -568,7 +576,7 @@ int dhcpConfig()
 		    if ( *dname == '.' )
 		      {
 			dname++;
-		        break;
+			break;
 		      }
 		    else
 		      dname++;
@@ -578,18 +586,18 @@ int dhcpConfig()
 		      DhcpOptions.val[domainName]=(char *)malloc(dname_len+1);
 		      DhcpOptions.len[domainName]=dname_len;
 		      memcpy((char *)DhcpOptions.val[domainName],
-		      dname,dname_len);
+			     dname,dname_len);
 		      ((char *)DhcpOptions.val[domainName])[dname_len]=0;
 		      DhcpOptions.num++;
 		    }
 		}
 	    }
-          if ( DhcpOptions.len[domainName] )
-            {
+	  if ( DhcpOptions.len[domainName] )
+	    {
 	      setdomainname(DhcpOptions.val[domainName],
-		DhcpOptions.len[domainName]);
+			    DhcpOptions.len[domainName]);
 	      logger(LOG_DEBUG,"your domainname = %s\n",
-		(char *)DhcpOptions.val[domainName]);
+		     (char *)DhcpOptions.val[domainName]);
 	    }
 #if 0
 	}
@@ -601,8 +609,8 @@ tsc:
   snprintf(hostinfo_file_old,sizeof(hostinfo_file_old),DHCP_CACHE_FILE,CONFIG_DIR,IfNameExt);
   i=open(hostinfo_file_old,O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR+S_IWUSR);
   if ( i == -1 ||
-      write(i,(char *)&DhcpIface,sizeof(dhcpInterface)) == -1 ||
-      close(i) == -1 )
+       write(i,(char *)&DhcpIface,sizeof(dhcpInterface)) == -1 ||
+       close(i) == -1 )
     logger(LOG_ERR,"dhcpConfig: open/write/close: %s",strerror(errno));
   snprintf(hostinfo_file,sizeof(hostinfo_file),DHCP_HOSTINFO,ConfigDir,IfNameExt);
   snprintf(hostinfo_file_old,sizeof(hostinfo_file_old),""DHCP_HOSTINFO".old",ConfigDir,IfNameExt);
@@ -614,173 +622,173 @@ tsc:
       memcpy(&b,DhcpOptions.val[subnetMask],4);
       c = DhcpIface.ciaddr & b;
       fprintf(f,"\
-IPADDR=%u.%u.%u.%u\n\
-NETMASK=%u.%u.%u.%u\n\
-NETWORK=%u.%u.%u.%u\n\
-BROADCAST=%u.%u.%u.%u\n",
-((unsigned char *)&DhcpIface.ciaddr)[0],
-((unsigned char *)&DhcpIface.ciaddr)[1],
-((unsigned char *)&DhcpIface.ciaddr)[2],
-((unsigned char *)&DhcpIface.ciaddr)[3],
-((unsigned char *)DhcpOptions.val[subnetMask])[0],
-((unsigned char *)DhcpOptions.val[subnetMask])[1],
-((unsigned char *)DhcpOptions.val[subnetMask])[2],
-((unsigned char *)DhcpOptions.val[subnetMask])[3],
-((unsigned char *)&c)[0],
-((unsigned char *)&c)[1],
-((unsigned char *)&c)[2],
-((unsigned char *)&c)[3],
-((unsigned char *)DhcpOptions.val[broadcastAddr])[0],
-((unsigned char *)DhcpOptions.val[broadcastAddr])[1],
-((unsigned char *)DhcpOptions.val[broadcastAddr])[2],
-((unsigned char *)DhcpOptions.val[broadcastAddr])[3]);
+	      IPADDR=%u.%u.%u.%u\n\
+	      NETMASK=%u.%u.%u.%u\n\
+	      NETWORK=%u.%u.%u.%u\n\
+	      BROADCAST=%u.%u.%u.%u\n",
+	      ((unsigned char *)&DhcpIface.ciaddr)[0],
+	      ((unsigned char *)&DhcpIface.ciaddr)[1],
+	      ((unsigned char *)&DhcpIface.ciaddr)[2],
+	      ((unsigned char *)&DhcpIface.ciaddr)[3],
+	      ((unsigned char *)DhcpOptions.val[subnetMask])[0],
+	      ((unsigned char *)DhcpOptions.val[subnetMask])[1],
+	      ((unsigned char *)DhcpOptions.val[subnetMask])[2],
+	      ((unsigned char *)DhcpOptions.val[subnetMask])[3],
+	      ((unsigned char *)&c)[0],
+	      ((unsigned char *)&c)[1],
+	      ((unsigned char *)&c)[2],
+	      ((unsigned char *)&c)[3],
+	      ((unsigned char *)DhcpOptions.val[broadcastAddr])[0],
+	      ((unsigned char *)DhcpOptions.val[broadcastAddr])[1],
+	      ((unsigned char *)DhcpOptions.val[broadcastAddr])[2],
+	      ((unsigned char *)DhcpOptions.val[broadcastAddr])[3]);
       if ( DhcpOptions.len[routersOnSubnet] > 3 )
 	{
 	  fprintf(f,"\
-GATEWAY=%u.%u.%u.%u",
-((unsigned char *)DhcpOptions.val[routersOnSubnet])[0],
-((unsigned char *)DhcpOptions.val[routersOnSubnet])[1],
-((unsigned char *)DhcpOptions.val[routersOnSubnet])[2],
-((unsigned char *)DhcpOptions.val[routersOnSubnet])[3]);
+		  GATEWAY=%u.%u.%u.%u",
+		  ((unsigned char *)DhcpOptions.val[routersOnSubnet])[0],
+		  ((unsigned char *)DhcpOptions.val[routersOnSubnet])[1],
+		  ((unsigned char *)DhcpOptions.val[routersOnSubnet])[2],
+		  ((unsigned char *)DhcpOptions.val[routersOnSubnet])[3]);
 	  for (i=4;i<DhcpOptions.len[routersOnSubnet];i+=4)
-  	    fprintf(f,",%u.%u.%u.%u",
-	    ((unsigned char *)DhcpOptions.val[routersOnSubnet])[i],
-	    ((unsigned char *)DhcpOptions.val[routersOnSubnet])[1+i],
-	    ((unsigned char *)DhcpOptions.val[routersOnSubnet])[2+i],
-	    ((unsigned char *)DhcpOptions.val[routersOnSubnet])[3+i]);
+	    fprintf(f,",%u.%u.%u.%u",
+		    ((unsigned char *)DhcpOptions.val[routersOnSubnet])[i],
+		    ((unsigned char *)DhcpOptions.val[routersOnSubnet])[1+i],
+		    ((unsigned char *)DhcpOptions.val[routersOnSubnet])[2+i],
+		    ((unsigned char *)DhcpOptions.val[routersOnSubnet])[3+i]);
 	}
-if ( DhcpOptions.len[staticRoute] )
-  {
-    fprintf(f,"\nROUTE=%u.%u.%u.%u,%u.%u.%u.%u",
-    ((unsigned char *)DhcpOptions.val[staticRoute])[0],
-    ((unsigned char *)DhcpOptions.val[staticRoute])[1],
-    ((unsigned char *)DhcpOptions.val[staticRoute])[2],
-    ((unsigned char *)DhcpOptions.val[staticRoute])[3],
-    ((unsigned char *)DhcpOptions.val[staticRoute])[4],
-    ((unsigned char *)DhcpOptions.val[staticRoute])[5],
-    ((unsigned char *)DhcpOptions.val[staticRoute])[6],
-    ((unsigned char *)DhcpOptions.val[staticRoute])[7]);
-    for (i=8;i<DhcpOptions.len[staticRoute];i+=8)
-    fprintf(f,",%u.%u.%u.%u,%u.%u.%u.%u",
-    ((unsigned char *)DhcpOptions.val[staticRoute])[i],
-    ((unsigned char *)DhcpOptions.val[staticRoute])[1+i],
-    ((unsigned char *)DhcpOptions.val[staticRoute])[2+i],
-    ((unsigned char *)DhcpOptions.val[staticRoute])[3+i],
-    ((unsigned char *)DhcpOptions.val[staticRoute])[4+i],
-    ((unsigned char *)DhcpOptions.val[staticRoute])[5+i],
-    ((unsigned char *)DhcpOptions.val[staticRoute])[6+i],
-    ((unsigned char *)DhcpOptions.val[staticRoute])[7+i]);
-  }
-if ( DhcpOptions.len[hostName] )
-  fprintf(f,"\nHOSTNAME=\'%s\'",cleanmetas((char *)DhcpOptions.val[hostName]));
-if ( DhcpOptions.len[domainName] )
-  fprintf(f,"\nDOMAIN=\'%s\'",cleanmetas((char *)DhcpOptions.val[domainName]));
-if ( DhcpOptions.len[nisDomainName] )
-  fprintf(f,"\nNISDOMAIN=\'%s\'",cleanmetas((char *)DhcpOptions.val[nisDomainName]));
-if ( DhcpOptions.len[rootPath] )
-  fprintf(f,"\nROOTPATH=\'%s\'",cleanmetas((char *)DhcpOptions.val[rootPath]));
-fprintf(f,"\n\
-DNS=%u.%u.%u.%u",
-((unsigned char *)DhcpOptions.val[dns])[0],
-((unsigned char *)DhcpOptions.val[dns])[1],
-((unsigned char *)DhcpOptions.val[dns])[2],
-((unsigned char *)DhcpOptions.val[dns])[3]);
-for (i=4;i<DhcpOptions.len[dns];i+=4)
-  fprintf(f,",%u.%u.%u.%u",
-  ((unsigned char *)DhcpOptions.val[dns])[i],
-  ((unsigned char *)DhcpOptions.val[dns])[1+i],
-  ((unsigned char *)DhcpOptions.val[dns])[2+i],
-  ((unsigned char *)DhcpOptions.val[dns])[3+i]);
-if ( DhcpOptions.len[dnsSearchPath] )
-  fprintf(f, "\nDNSSEARCH=\'%s\'", cleanmetas((char *)DhcpOptions.val[dnsSearchPath]));
-if ( DhcpOptions.len[ntpServers]>=4 )
-  {
-    fprintf(f,"\nNTPSERVERS=%u.%u.%u.%u",
-    ((unsigned char *)DhcpOptions.val[ntpServers])[0],
-    ((unsigned char *)DhcpOptions.val[ntpServers])[1],
-    ((unsigned char *)DhcpOptions.val[ntpServers])[2],
-    ((unsigned char *)DhcpOptions.val[ntpServers])[3]);
-    for (i=4;i<DhcpOptions.len[ntpServers];i+=4)
-      fprintf(f,",%u.%u.%u.%u",
-      ((unsigned char *)DhcpOptions.val[ntpServers])[i],
-      ((unsigned char *)DhcpOptions.val[ntpServers])[1+i],
-      ((unsigned char *)DhcpOptions.val[ntpServers])[2+i],
-      ((unsigned char *)DhcpOptions.val[ntpServers])[3+i]);
-  }
-if ( DhcpOptions.len[nisServers]>=4 )
-  {
-    fprintf(f,"\nNISSERVERS=%u.%u.%u.%u",
-    ((unsigned char *)DhcpOptions.val[nisServers])[0],
-    ((unsigned char *)DhcpOptions.val[nisServers])[1],
-    ((unsigned char *)DhcpOptions.val[nisServers])[2],
-    ((unsigned char *)DhcpOptions.val[nisServers])[3]);
-    for (i=4;i<DhcpOptions.len[nisServers];i+=4)
-      fprintf(f,",%u.%u.%u.%u",
-      ((unsigned char *)DhcpOptions.val[nisServers])[i],
-      ((unsigned char *)DhcpOptions.val[nisServers])[1+i],
-      ((unsigned char *)DhcpOptions.val[nisServers])[2+i],
-      ((unsigned char *)DhcpOptions.val[nisServers])[3+i]);
-  }
-fprintf(f,"\n\
-DHCPSID=%u.%u.%u.%u\n\
-DHCPGIADDR=%u.%u.%u.%u\n\
-DHCPSIADDR=%u.%u.%u.%u\n\
-DHCPCHADDR=%02X:%02X:%02X:%02X:%02X:%02X\n\
-DHCPSHADDR=%02X:%02X:%02X:%02X:%02X:%02X\n\
-DHCPSNAME=\'%s\'\n\
-LEASETIME=%u\n\
-RENEWALTIME=%u\n\
-REBINDTIME=%u\n\
-INTERFACE=\'%s\'\n\
-CLASSID=\'%s\'\n",
-((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[0],
-((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[1],
-((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[2],
-((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[3],
-((unsigned char *)&DhcpMsgRecv->giaddr)[0],
-((unsigned char *)&DhcpMsgRecv->giaddr)[1],
-((unsigned char *)&DhcpMsgRecv->giaddr)[2],
-((unsigned char *)&DhcpMsgRecv->giaddr)[3],
-((unsigned char *)&DhcpMsgRecv->siaddr)[0],
-((unsigned char *)&DhcpMsgRecv->siaddr)[1],
-((unsigned char *)&DhcpMsgRecv->siaddr)[2],
-((unsigned char *)&DhcpMsgRecv->siaddr)[3],
-ClientHwAddr[0],
-ClientHwAddr[1],
-ClientHwAddr[2],
-ClientHwAddr[3],
-ClientHwAddr[4],
-ClientHwAddr[5],
-DhcpIface.shaddr[0],
-DhcpIface.shaddr[1],
-DhcpIface.shaddr[2],
-DhcpIface.shaddr[3],
-DhcpIface.shaddr[4],
-DhcpIface.shaddr[5],
-cleanmetas(DhcpMsgRecv->sname),
-ntohl(*(unsigned int *)DhcpOptions.val[dhcpIPaddrLeaseTime]),
-ntohl(*(unsigned int *)DhcpOptions.val[dhcpT1value]),
-ntohl(*(unsigned int *)DhcpOptions.val[dhcpT2value]),
-IfNameExt,
-DhcpIface.class_id);
+      if ( DhcpOptions.len[staticRoute] )
+	{
+	  fprintf(f,"\nROUTE=%u.%u.%u.%u,%u.%u.%u.%u",
+		  ((unsigned char *)DhcpOptions.val[staticRoute])[0],
+		  ((unsigned char *)DhcpOptions.val[staticRoute])[1],
+		  ((unsigned char *)DhcpOptions.val[staticRoute])[2],
+		  ((unsigned char *)DhcpOptions.val[staticRoute])[3],
+		  ((unsigned char *)DhcpOptions.val[staticRoute])[4],
+		  ((unsigned char *)DhcpOptions.val[staticRoute])[5],
+		  ((unsigned char *)DhcpOptions.val[staticRoute])[6],
+		  ((unsigned char *)DhcpOptions.val[staticRoute])[7]);
+	  for (i=8;i<DhcpOptions.len[staticRoute];i+=8)
+	    fprintf(f,",%u.%u.%u.%u,%u.%u.%u.%u",
+		    ((unsigned char *)DhcpOptions.val[staticRoute])[i],
+		    ((unsigned char *)DhcpOptions.val[staticRoute])[1+i],
+		    ((unsigned char *)DhcpOptions.val[staticRoute])[2+i],
+		    ((unsigned char *)DhcpOptions.val[staticRoute])[3+i],
+		    ((unsigned char *)DhcpOptions.val[staticRoute])[4+i],
+		    ((unsigned char *)DhcpOptions.val[staticRoute])[5+i],
+		    ((unsigned char *)DhcpOptions.val[staticRoute])[6+i],
+		    ((unsigned char *)DhcpOptions.val[staticRoute])[7+i]);
+	}
+      if ( DhcpOptions.len[hostName] )
+	fprintf(f,"\nHOSTNAME=\'%s\'",cleanmetas((char *)DhcpOptions.val[hostName]));
+      if ( DhcpOptions.len[domainName] )
+	fprintf(f,"\nDOMAIN=\'%s\'",cleanmetas((char *)DhcpOptions.val[domainName]));
+      if ( DhcpOptions.len[nisDomainName] )
+	fprintf(f,"\nNISDOMAIN=\'%s\'",cleanmetas((char *)DhcpOptions.val[nisDomainName]));
+      if ( DhcpOptions.len[rootPath] )
+	fprintf(f,"\nROOTPATH=\'%s\'",cleanmetas((char *)DhcpOptions.val[rootPath]));
+      fprintf(f,"\n\
+	      DNS=%u.%u.%u.%u",
+	      ((unsigned char *)DhcpOptions.val[dns])[0],
+	      ((unsigned char *)DhcpOptions.val[dns])[1],
+	      ((unsigned char *)DhcpOptions.val[dns])[2],
+	      ((unsigned char *)DhcpOptions.val[dns])[3]);
+      for (i=4;i<DhcpOptions.len[dns];i+=4)
+	fprintf(f,",%u.%u.%u.%u",
+		((unsigned char *)DhcpOptions.val[dns])[i],
+		((unsigned char *)DhcpOptions.val[dns])[1+i],
+		((unsigned char *)DhcpOptions.val[dns])[2+i],
+		((unsigned char *)DhcpOptions.val[dns])[3+i]);
+      if ( DhcpOptions.len[dnsSearchPath] )
+	fprintf(f, "\nDNSSEARCH=\'%s\'", cleanmetas((char *)DhcpOptions.val[dnsSearchPath]));
+      if ( DhcpOptions.len[ntpServers]>=4 )
+	{
+	  fprintf(f,"\nNTPSERVERS=%u.%u.%u.%u",
+		  ((unsigned char *)DhcpOptions.val[ntpServers])[0],
+		  ((unsigned char *)DhcpOptions.val[ntpServers])[1],
+		  ((unsigned char *)DhcpOptions.val[ntpServers])[2],
+		  ((unsigned char *)DhcpOptions.val[ntpServers])[3]);
+	  for (i=4;i<DhcpOptions.len[ntpServers];i+=4)
+	    fprintf(f,",%u.%u.%u.%u",
+		    ((unsigned char *)DhcpOptions.val[ntpServers])[i],
+		    ((unsigned char *)DhcpOptions.val[ntpServers])[1+i],
+		    ((unsigned char *)DhcpOptions.val[ntpServers])[2+i],
+		    ((unsigned char *)DhcpOptions.val[ntpServers])[3+i]);
+	}
+      if ( DhcpOptions.len[nisServers]>=4 )
+	{
+	  fprintf(f,"\nNISSERVERS=%u.%u.%u.%u",
+		  ((unsigned char *)DhcpOptions.val[nisServers])[0],
+		  ((unsigned char *)DhcpOptions.val[nisServers])[1],
+		  ((unsigned char *)DhcpOptions.val[nisServers])[2],
+		  ((unsigned char *)DhcpOptions.val[nisServers])[3]);
+	  for (i=4;i<DhcpOptions.len[nisServers];i+=4)
+	    fprintf(f,",%u.%u.%u.%u",
+		    ((unsigned char *)DhcpOptions.val[nisServers])[i],
+		    ((unsigned char *)DhcpOptions.val[nisServers])[1+i],
+		    ((unsigned char *)DhcpOptions.val[nisServers])[2+i],
+		    ((unsigned char *)DhcpOptions.val[nisServers])[3+i]);
+	}
+      fprintf(f,"\n\
+	      DHCPSID=%u.%u.%u.%u\n\
+	      DHCPGIADDR=%u.%u.%u.%u\n\
+	      DHCPSIADDR=%u.%u.%u.%u\n\
+	      DHCPCHADDR=%02X:%02X:%02X:%02X:%02X:%02X\n\
+	      DHCPSHADDR=%02X:%02X:%02X:%02X:%02X:%02X\n\
+	      DHCPSNAME=\'%s\'\n\
+	      LEASETIME=%u\n\
+	      RENEWALTIME=%u\n\
+	      REBINDTIME=%u\n\
+	      INTERFACE=\'%s\'\n\
+	      CLASSID=\'%s\'\n",
+	      ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[0],
+	      ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[1],
+	      ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[2],
+	      ((unsigned char *)DhcpOptions.val[dhcpServerIdentifier])[3],
+	      ((unsigned char *)&DhcpMsgRecv->giaddr)[0],
+	      ((unsigned char *)&DhcpMsgRecv->giaddr)[1],
+	      ((unsigned char *)&DhcpMsgRecv->giaddr)[2],
+	      ((unsigned char *)&DhcpMsgRecv->giaddr)[3],
+	      ((unsigned char *)&DhcpMsgRecv->siaddr)[0],
+	      ((unsigned char *)&DhcpMsgRecv->siaddr)[1],
+	      ((unsigned char *)&DhcpMsgRecv->siaddr)[2],
+	      ((unsigned char *)&DhcpMsgRecv->siaddr)[3],
+	      ClientHwAddr[0],
+	      ClientHwAddr[1],
+	      ClientHwAddr[2],
+	      ClientHwAddr[3],
+	      ClientHwAddr[4],
+	      ClientHwAddr[5],
+	      DhcpIface.shaddr[0],
+	      DhcpIface.shaddr[1],
+	      DhcpIface.shaddr[2],
+	      DhcpIface.shaddr[3],
+	      DhcpIface.shaddr[4],
+	      DhcpIface.shaddr[5],
+	      cleanmetas(DhcpMsgRecv->sname),
+	      ntohl(*(unsigned int *)DhcpOptions.val[dhcpIPaddrLeaseTime]),
+	      ntohl(*(unsigned int *)DhcpOptions.val[dhcpT1value]),
+	      ntohl(*(unsigned int *)DhcpOptions.val[dhcpT2value]),
+	      IfNameExt,
+	      DhcpIface.class_id);
       if ( ClientID )
 	fprintf(f,"CLIENTID=\'%s\'\n",ClientID);
       else
 	fprintf(f,"CLIENTID=%02X:%02X:%02X:%02X:%02X:%02X\n",
-DhcpIface.client_id[3],DhcpIface.client_id[4],DhcpIface.client_id[5],
-DhcpIface.client_id[6],DhcpIface.client_id[7],DhcpIface.client_id[8]);
+		DhcpIface.client_id[3],DhcpIface.client_id[4],DhcpIface.client_id[5],
+		DhcpIface.client_id[6],DhcpIface.client_id[7],DhcpIface.client_id[8]);
       if ( SetFQDNHostName != FQDNdisable )
-        {
+	{
 	  if ( DhcpOptions.len[dhcpFQDNHostName] )
 	    {
-fprintf(f,"FQDNFLAGS=%u\n\
-FQDNRCODE1=%u\n\
-FQDNRCODE2=%u\n\
-FQDNHOSTNAME='%s'\n",
-((unsigned char *)DhcpOptions.val[dhcpFQDNHostName])[0],
-((unsigned char *)DhcpOptions.val[dhcpFQDNHostName])[1],
-((unsigned char *)DhcpOptions.val[dhcpFQDNHostName])[2],
-(cleanmetas(((char *)DhcpOptions.val[dhcpFQDNHostName])+3)));
+	      fprintf(f,"FQDNFLAGS=%u\n\
+		      FQDNRCODE1=%u\n\
+		      FQDNRCODE2=%u\n\
+		      FQDNHOSTNAME='%s'\n",
+		      ((unsigned char *)DhcpOptions.val[dhcpFQDNHostName])[0],
+		      ((unsigned char *)DhcpOptions.val[dhcpFQDNHostName])[1],
+		      ((unsigned char *)DhcpOptions.val[dhcpFQDNHostName])[2],
+		      (cleanmetas(((char *)DhcpOptions.val[dhcpFQDNHostName])+3)));
 	    }
 	}
       fclose(f);
@@ -788,7 +796,7 @@ FQDNHOSTNAME='%s'\n",
     }
   else
     logger(LOG_ERR,"dhcpConfig: fopen %s: %s", hostinfo_file, strerror(errno));
-  
+
   if ( DhcpIface.ciaddr == prev_ip_addr )
     execute_on_change("up");
   else					/* IP address has changed */
@@ -796,7 +804,7 @@ FQDNHOSTNAME='%s'\n",
       execute_on_change("new");
       prev_ip_addr=DhcpIface.ciaddr;
     }
-  
+
   return 0;
 }
 /*****************************************************************************/

@@ -28,8 +28,8 @@
 unsigned short ip_id;
 /*****************************************************************************/
 unsigned short in_cksum(addr,len)
-unsigned short *addr;
-int len;
+    unsigned short *addr;
+    int len;
 {
   register int sum = 0;
   register u_short *w = addr;
@@ -94,7 +94,7 @@ void udpipgen(udpiphdr *udpip,unsigned int saddr,unsigned int daddr,unsigned sho
 }
 /*****************************************************************************/
 int udpipchk(udpip)
-udpiphdr *udpip;
+    udpiphdr *udpip;
 {
   int hl;
   struct ip save_ip;

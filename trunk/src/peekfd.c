@@ -27,8 +27,8 @@
 
 /*****************************************************************************/
 int peekfd(s,tv_usec)
-int s;
-time_t tv_usec;
+    int s;
+    time_t tv_usec;
 {
   fd_set fs;
   struct timeval tv;
