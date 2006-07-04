@@ -1,3 +1,8 @@
+04 Jul 2006; Roy Marples <uberlord@gentoo.org>
+
+   Add patches from KIMURA Masaru which clean some minor errors,
+   Gentoo bug #139179.
+
 01 Jul 2006; Roy Marples <uberlord@gentoo.org>
 
    Hopefully fixed ARP checking by adding a timeout, Gentoo bug #137800.

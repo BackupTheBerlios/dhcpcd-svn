@@ -765,7 +765,7 @@ tsc:
 	      DhcpIface.shaddr[3],
 	      DhcpIface.shaddr[4],
 	      DhcpIface.shaddr[5],
-	      cleanmetas(DhcpMsgRecv->sname),
+	      cleanmetas((char *)DhcpMsgRecv->sname),
 	      ntohl(*(unsigned int *)DhcpOptions.val[dhcpIPaddrLeaseTime]),
 	      ntohl(*(unsigned int *)DhcpOptions.val[dhcpT1value]),
 	      ntohl(*(unsigned int *)DhcpOptions.val[dhcpT2value]),
