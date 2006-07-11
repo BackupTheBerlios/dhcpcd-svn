@@ -39,11 +39,11 @@ extern char		*ProgramName;
 extern char		*IfNameExt;
 extern char		*ConfigDir;
 extern int              Persistent;
-extern jmp_buf		env;
+extern sigjmp_buf	env;
 extern void		*(*currState)();
 extern int		execOnStop;
 
-jmp_buf			jmpTerm;
+sigjmp_buf		jmpTerm;
 
 /*****************************************************************************/
 void killPid(sig)

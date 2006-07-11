@@ -105,7 +105,7 @@ time_t			ReqSentTime;
 dhcpOptions		DhcpOptions;
 dhcpInterface		DhcpIface;
 udpipMessage		UdpIpMsgSend,UdpIpMsgRecv;
-jmp_buf			env;
+sigjmp_buf		env;
 unsigned char		ClientHwAddr[ETH_ALEN];
 
 const struct ip *ipSend=(struct ip *)((struct udpiphdr *)UdpIpMsgSend.udpipmsg)->ip;
