@@ -29,7 +29,8 @@ static char *syslog_level[] = {
   [LOG_WARNING] = "LOG_WARNING",
   [LOG_NOTICE]  = "LOG_NOTICE",
   [LOG_INFO]    = "LOG_INFO",
-  [LOG_DEBUG]   = "LOG_DEBUG"
+  [LOG_DEBUG]   = "LOG_DEBUG",
+  [LOG_DEBUG+1]	= NULL
 };
 
 int log_to_level(const char *priority)
