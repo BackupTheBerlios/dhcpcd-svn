@@ -1,3 +1,8 @@
+22 Jul 2006; Roy Marples <uberlord@gentoo.org>
+
+   Accepted patch from Bert Van Leeuwen to not resolve our hostname
+   unless we specifically ask to set it, Gentoo bug #141207.
+
 21 Jul 2006; Roy Marples <uberlord@gentoo.org>
 
    Accepted patch from Bert Van Leeuwen to fix -v segfaulting

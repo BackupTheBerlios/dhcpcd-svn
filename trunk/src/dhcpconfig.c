@@ -511,7 +511,7 @@ int dhcpConfig()
       else
 	logger(LOG_ERR,"dhcpConfig: fopen %s: %s", ntp_file, strerror(errno));
     }
-  if ( ! DhcpOptions.len[hostName] )
+  if ( SetHostName && ! DhcpOptions.len[hostName] )
     {
       hp=gethostbyaddr((char *)&DhcpIface.ciaddr,
 		       sizeof(DhcpIface.ciaddr),AF_INET);
