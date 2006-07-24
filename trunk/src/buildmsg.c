@@ -46,53 +46,57 @@ extern  struct in_addr  inform_ipaddr;
 
 extern	int		SetFQDNHostName;
 
-/*****************************************************************************/
-void buildDhcpDiscover(xid)
-    unsigned xid;
+
+static unsigned char * buildDhcpHeader (unsigned xid)
 {
   register unsigned char *p = DhcpMsgSend->options + 4;
 
-  /* build Ethernet header */
-  memset(&UdpIpMsgSend,0,sizeof(udpipMessage));
-  memcpy(UdpIpMsgSend.ethhdr.ether_dhost,MAC_BCAST_ADDR,ETH_ALEN);
-  memcpy(UdpIpMsgSend.ethhdr.ether_shost,ClientHwAddr,ETH_ALEN);
-  UdpIpMsgSend.ethhdr.ether_type = htons(ETHERTYPE_IP);
+  memset (&UdpIpMsgSend, 0, sizeof (udpipMessage));
+  memcpy (UdpIpMsgSend.ethhdr.ether_dhost, MAC_BCAST_ADDR, ETH_ALEN);
+  memcpy (UdpIpMsgSend.ethhdr.ether_shost, ClientHwAddr, ETH_ALEN);
+  UdpIpMsgSend.ethhdr.ether_type = htons (ETHERTYPE_IP);
 
-  DhcpMsgSend->op	=	DHCP_BOOTREQUEST;
-  DhcpMsgSend->htype	=	(TokenRingIf) ? ARPHRD_IEEE802_TR : ARPHRD_ETHER;
-  DhcpMsgSend->hlen	=	ETH_ALEN;
-  DhcpMsgSend->xid	=	xid;
-  DhcpMsgSend->secs	=       htons(10);
-  if ( BroadcastResp )
-    DhcpMsgSend->flags	=	htons(BROADCAST_FLAG);
-#if 0
-  memcpy(DhcpMsgSend->chaddr,DhcpIface.chaddr,ETH_ALEN);
-#else
-  memcpy(DhcpMsgSend->chaddr,ClientHwAddr,ETH_ALEN);
-#endif
-  memcpy(DhcpMsgSend->options,&magic_cookie,4);
+  DhcpMsgSend->op	= DHCP_BOOTREQUEST;
+  DhcpMsgSend->htype	= (TokenRingIf) ? ARPHRD_IEEE802_TR : ARPHRD_ETHER;
+  DhcpMsgSend->hlen	= ETH_ALEN;
+  DhcpMsgSend->xid	= xid;
+  DhcpMsgSend->secs	= htons (10);
+  if (BroadcastResp)
+    DhcpMsgSend->flags	= htons (BROADCAST_FLAG);
+  memcpy (DhcpMsgSend->chaddr, ClientHwAddr, ETH_ALEN);
+  memcpy (DhcpMsgSend->options, &magic_cookie, 4);
   *p++ = dhcpMessageType;
   *p++ = 1;
-  *p++ = DHCP_DISCOVER;
+
+  return p;
+}
+
+static void buildDhcpMessage (unsigned xid, u_char op)
+{
+  register unsigned char *p = buildDhcpHeader (xid);
+
+  *p++ = op;
   *p++ = dhcpMaxMsgSize;
   *p++ = 2;
-  memcpy(p,&dhcpMsgSize,2);
+  memcpy (p, &dhcpMsgSize, 2);
   p += 2;
-  if ( DhcpIface.ciaddr )
+
+  if (DhcpIface.ciaddr)
     {
-      if ( BeRFC1541 )
+      if (BeRFC1541)
 	DhcpMsgSend->ciaddr = DhcpIface.ciaddr;
       else
 	{
 	  *p++ = dhcpRequestedIPaddr;
 	  *p++ = 4;
-	  memcpy(p,&DhcpIface.ciaddr,4);
+	  memcpy (p,&DhcpIface.ciaddr,4);
 	  p += 4; 
 	}
     }
+
   *p++ = dhcpIPaddrLeaseTime;
   *p++ = 4;
-  memcpy(p,&nleaseTime,4);
+  memcpy (p, &nleaseTime, 4);
   p += 4;
   *p++ = dhcpParamRequest;
   *p++ = 15;
@@ -111,21 +115,24 @@ void buildDhcpDiscover(xid)
   *p++ = nisServers;
   *p++ = ntpServers;
   *p++ = dnsSearchPath;
+
   /* FQDN option (81) replaces HostName option (12) if requested */
-  if (( HostName ) && ( SetFQDNHostName == FQDNdisable ))
+  if ((HostName) && (SetFQDNHostName == FQDNdisable))
     {
       *p++ = hostName;
       *p++ = HostName_len;
-      memcpy(p,HostName,HostName_len);
+      memcpy (p, HostName, HostName_len);
       p += HostName_len;
     }
+
   *p++ = dhcpClassIdentifier;
   *p++ = DhcpIface.class_len;
-  memcpy(p,DhcpIface.class_id,DhcpIface.class_len);
+  memcpy (p, DhcpIface.class_id, DhcpIface.class_len);
   p += DhcpIface.class_len;
-  memcpy(p,DhcpIface.client_id,DhcpIface.client_len);
+  memcpy (p, DhcpIface.client_id, DhcpIface.client_len);
   p += DhcpIface.client_len;
-  if (( HostName ) && ( SetFQDNHostName != FQDNdisable ))
+
+  if ((HostName) && (SetFQDNHostName != FQDNdisable))
     {
       /* Draft IETF DHC-FQDN option (81) */
       *p++ = dhcpFQDNHostName;
@@ -139,568 +146,111 @@ void buildDhcpDiscover(xid)
       *p++ = SetFQDNHostName & 0x9;
       *p++ = 0; /* rcode1, response from DNS server to DHCP for PTR RR */
       *p++ = 0; /* rcode2, response from DNS server to DHCP for A RR if S=1 */
-      memcpy(p,HostName,HostName_len);
+      memcpy (p, HostName, HostName_len);
       p += HostName_len;
     }
+
   *p = endOption;
-
-  /* build UDP/IP header */
-  udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,0,INADDR_BROADCAST,
-	   htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),sizeof(dhcpMessage));
 }
-/*****************************************************************************/
-void buildDhcpRequest(xid)
-    unsigned xid;
+
+void buildDhcpDiscover(unsigned xid)
 {
-  register unsigned char *p = DhcpMsgSend->options + 4;
+  buildDhcpMessage(xid, DHCP_DISCOVER);
 
-  /* build Ethernet header */
-  memset(&UdpIpMsgSend,0,sizeof(udpipMessage));
-  memcpy(UdpIpMsgSend.ethhdr.ether_dhost,MAC_BCAST_ADDR,ETH_ALEN);
-  memcpy(UdpIpMsgSend.ethhdr.ether_shost,ClientHwAddr,ETH_ALEN);
-  UdpIpMsgSend.ethhdr.ether_type = htons(ETHERTYPE_IP);
-
-  DhcpMsgSend->op	=	DHCP_BOOTREQUEST;
-  DhcpMsgSend->htype	=	(TokenRingIf) ? ARPHRD_IEEE802_TR : ARPHRD_ETHER;
-  DhcpMsgSend->hlen	=	ETH_ALEN;
-  DhcpMsgSend->xid	=	xid;
-  DhcpMsgSend->secs	=	htons(10);
-  if ( BroadcastResp )
-    DhcpMsgSend->flags	=	htons(BROADCAST_FLAG);
-#if 0
-  memcpy(DhcpMsgSend->chaddr,DhcpIface.chaddr,ETH_ALEN);
-#else
-  memcpy(DhcpMsgSend->chaddr,ClientHwAddr,ETH_ALEN);
-#endif
-  memcpy(DhcpMsgSend->options,&magic_cookie,4);
-  *p++ = dhcpMessageType;
-  *p++ = 1;
-  *p++ = DHCP_REQUEST;
-  *p++ = dhcpMaxMsgSize;
-  *p++ = 2;
-  memcpy(p,&dhcpMsgSize,2);
-  p += 2;
-  *p++ = dhcpServerIdentifier;
-  *p++ = 4;
-  memcpy(p,DhcpOptions.val[dhcpServerIdentifier],4);
-  p += 4;
-  if ( BeRFC1541 )
-    DhcpMsgSend->ciaddr = DhcpIface.ciaddr;
-  else
-    {
-      *p++ = dhcpRequestedIPaddr;
-      *p++ = 4;
-      memcpy(p,&DhcpIface.ciaddr,4);
-      p += 4;
-    }
-  if ( DhcpOptions.val[dhcpIPaddrLeaseTime] )
-    {
-      *p++ = dhcpIPaddrLeaseTime;
-      *p++ = 4;
-      memcpy(p,DhcpOptions.val[dhcpIPaddrLeaseTime],4);
-      p += 4;
-    }
-  *p++ = dhcpParamRequest;
-  *p++ = 15;
-  *p++ = subnetMask;
-  *p++ = routersOnSubnet;
-  *p++ = dns;
-  *p++ = hostName;
-  *p++ = domainName;
-  *p++ = rootPath;
-  *p++ = defaultIPTTL;
-  *p++ = broadcastAddr;
-  *p++ = performMaskDiscovery;
-  *p++ = performRouterDiscovery;
-  *p++ = staticRoute;
-  *p++ = nisDomainName;
-  *p++ = nisServers;
-  *p++ = ntpServers;
-  *p++ = dnsSearchPath;
-  /* FQDN option (81) replaces HostName option (12) if requested */
-  if (( HostName ) && ( SetFQDNHostName == FQDNdisable ))
-    {
-      *p++ = hostName;
-      *p++ = HostName_len;
-      memcpy(p,HostName,HostName_len);
-      p += HostName_len;
-    }
-  *p++ = dhcpClassIdentifier;
-  *p++ = DhcpIface.class_len;
-  memcpy(p,DhcpIface.class_id,DhcpIface.class_len);
-  p += DhcpIface.class_len;
-  memcpy(p,DhcpIface.client_id,DhcpIface.client_len);
-  p += DhcpIface.client_len;
-  if (( HostName ) && ( SetFQDNHostName != FQDNdisable ))
-    {
-      /* Draft IETF DHC-FQDN option (81) */
-      *p++ = dhcpFQDNHostName;
-      *p++ = HostName_len + 3;
-      /* Flags: 0000NEOS
-       * S: 1 => Client requests Server to update A RR in DNS as well as PTR
-       * O: 1 => Server indicates to client that DNS has been updated regardless
-       * E: 1 => Name data is DNS format, i.e. <4>host<6>domain<4>com<0> not "host.domain.com"
-       * N: 1 => Client requests Server to not update DNS
-       */
-      *p++ = SetFQDNHostName & 0x9;
-      *p++ = 0; /* rcode1, response from DNS server to DHCP for PTR RR */
-      *p++ = 0; /* rcode2, response from DNS server to DHCP for A RR if S=1 */
-      memcpy(p,HostName,HostName_len);
-      p += HostName_len;
-    }
-  *p = endOption;
-
-  /* build UDP/IP header */
-  udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,0,INADDR_BROADCAST,
-	   htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),sizeof(dhcpMessage));
+  udpipgen ((udpiphdr *) UdpIpMsgSend. udpipmsg, 0, INADDR_BROADCAST,
+	    htons (DHCP_CLIENT_PORT), htons (DHCP_SERVER_PORT),
+	    sizeof (dhcpMessage));
 }
-/*****************************************************************************/
-void buildDhcpRenew(xid)
-    unsigned xid;
+
+void buildDhcpRequest(unsigned xid)
 {
-  register unsigned char *p = DhcpMsgSend->options + 4;
-  memset(&UdpIpMsgSend,0,sizeof(udpipMessage));
-  memcpy(UdpIpMsgSend.ethhdr.ether_dhost,DhcpIface.shaddr,ETH_ALEN);
-  memcpy(UdpIpMsgSend.ethhdr.ether_shost,ClientHwAddr,ETH_ALEN);
-  UdpIpMsgSend.ethhdr.ether_type = htons(ETHERTYPE_IP);
+  buildDhcpMessage(xid, DHCP_REQUEST);
 
-  DhcpMsgSend->op	=	DHCP_BOOTREQUEST;
-  DhcpMsgSend->htype	=	(TokenRingIf) ? ARPHRD_IEEE802_TR : ARPHRD_ETHER;
-  DhcpMsgSend->hlen	=	ETH_ALEN;
-  DhcpMsgSend->xid	=	xid;
-  DhcpMsgSend->secs	=	htons(10);
-  if ( BroadcastResp )
-    DhcpMsgSend->flags	=	htons(BROADCAST_FLAG);
-  DhcpMsgSend->ciaddr   =       DhcpIface.ciaddr;
-#if 0
-  memcpy(DhcpMsgSend->chaddr,DhcpIface.chaddr,ETH_ALEN);
-#else
-  memcpy(DhcpMsgSend->chaddr,ClientHwAddr,ETH_ALEN);
-#endif
-  memcpy(DhcpMsgSend->options,&magic_cookie,4);
-  *p++ = dhcpMessageType;
-  *p++ = 1;
-  *p++ = DHCP_REQUEST;
-  *p++ = dhcpMaxMsgSize;
-  *p++ = 2;
-  memcpy(p,&dhcpMsgSize,2);
-  p += 2;
-#if 0
-  if ( DhcpOptions.val[dhcpIPaddrLeaseTime] )
-    {
-      *p++ = dhcpIPaddrLeaseTime;
-      *p++ = 4;
-      memcpy(p,DhcpOptions.val[dhcpIPaddrLeaseTime],4);
-      p += 4;
-    }
-#endif
-  *p++ = dhcpParamRequest;
-  *p++ = 15;
-  *p++ = subnetMask;
-  *p++ = routersOnSubnet;
-  *p++ = dns;
-  *p++ = hostName;
-  *p++ = domainName;
-  *p++ = rootPath;
-  *p++ = defaultIPTTL;
-  *p++ = broadcastAddr;
-  *p++ = performMaskDiscovery;
-  *p++ = performRouterDiscovery;
-  *p++ = staticRoute;
-  *p++ = nisDomainName;
-  *p++ = nisServers;
-  *p++ = ntpServers;
-  *p++ = dnsSearchPath;
-  /* FQDN option (81) replaces HostName option (12) if requested */
-  if (( HostName ) && ( SetFQDNHostName == FQDNdisable ))
-    {
-      *p++ = hostName;
-      *p++ = HostName_len;
-      memcpy(p,HostName,HostName_len);
-      p += HostName_len;
-    }
-  *p++ = dhcpClassIdentifier;
-  *p++ = DhcpIface.class_len;
-  memcpy(p,DhcpIface.class_id,DhcpIface.class_len);
-  p += DhcpIface.class_len;
-  memcpy(p,DhcpIface.client_id,DhcpIface.client_len);
-  p += DhcpIface.client_len;
-  if (( HostName ) && ( SetFQDNHostName != FQDNdisable ))
-    {
-      /* Draft IETF DHC-FQDN option (81) */
-      *p++ = dhcpFQDNHostName;
-      *p++ = HostName_len + 3;
-      /* Flags: 0000NEOS
-       * S: 1 => Client requests Server to update A RR in DNS as well as PTR
-       * O: 1 => Server indicates to client that DNS has been updated regardless
-       * E: 1 => Name data is DNS format, i.e. <4>host<6>domain<4>com<0> not "host.domain.com"
-       * N: 1 => Client requests Server to not update DNS
-       */
-      *p++ = SetFQDNHostName & 0x9;
-      *p++ = 0; /* rcode1, response from DNS server to DHCP for PTR RR */
-      *p++ = 0; /* rcode2, response from DNS server to DHCP for A RR if S=1 */
-      memcpy(p,HostName,HostName_len);
-      p += HostName_len;
-    }
-  *p = endOption;
-
-  udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,
-	   DhcpIface.ciaddr,DhcpIface.siaddr,
-	   htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),sizeof(dhcpMessage));
+  udpipgen ((udpiphdr *) UdpIpMsgSend.udpipmsg, 0, INADDR_BROADCAST,
+	    htons (DHCP_CLIENT_PORT), htons(DHCP_SERVER_PORT),
+	    sizeof (dhcpMessage));
 }
-/*****************************************************************************/
-void buildDhcpRebind(xid)
-    unsigned xid;
+
+void buildDhcpRenew(unsigned xid)
 {
-  register unsigned char *p = DhcpMsgSend->options + 4;
-  memset(&UdpIpMsgSend,0,sizeof(udpipMessage));
-  memcpy(UdpIpMsgSend.ethhdr.ether_dhost,MAC_BCAST_ADDR,ETH_ALEN);
-  memcpy(UdpIpMsgSend.ethhdr.ether_shost,ClientHwAddr,ETH_ALEN);
-  UdpIpMsgSend.ethhdr.ether_type = htons(ETHERTYPE_IP);
+  buildDhcpMessage(xid, DHCP_REQUEST);
 
-  DhcpMsgSend->op	=	DHCP_BOOTREQUEST;
-  DhcpMsgSend->htype	=	(TokenRingIf) ? ARPHRD_IEEE802_TR : ARPHRD_ETHER;
-  DhcpMsgSend->hlen	=	ETH_ALEN;
-  DhcpMsgSend->xid	=	xid;
-  DhcpMsgSend->secs	=	htons(10);
-  if ( BroadcastResp )
-    DhcpMsgSend->flags	=	htons(BROADCAST_FLAG);
-  DhcpMsgSend->ciaddr   =       DhcpIface.ciaddr;
-#if 0
-  memcpy(DhcpMsgSend->chaddr,DhcpIface.chaddr,ETH_ALEN);
-#else
-  memcpy(DhcpMsgSend->chaddr,ClientHwAddr,ETH_ALEN);
-#endif
-  memcpy(DhcpMsgSend->options,&magic_cookie,4);
-  *p++ = dhcpMessageType;
-  *p++ = 1;
-  *p++ = DHCP_REQUEST;
-  *p++ = dhcpMaxMsgSize;
-  *p++ = 2;
-  memcpy(p,&dhcpMsgSize,2);
-  p += 2;
-  if ( DhcpOptions.val[dhcpIPaddrLeaseTime] )
-    {
-      *p++ = dhcpIPaddrLeaseTime;
-      *p++ = 4;
-      memcpy(p,DhcpOptions.val[dhcpIPaddrLeaseTime],4);
-      p += 4;
-    }
-  *p++ = dhcpParamRequest;
-  *p++ = 15;
-  *p++ = subnetMask;
-  *p++ = routersOnSubnet;
-  *p++ = dns;
-  *p++ = hostName;
-  *p++ = domainName;
-  *p++ = rootPath;
-  *p++ = defaultIPTTL;
-  *p++ = broadcastAddr;
-  *p++ = performMaskDiscovery;
-  *p++ = performRouterDiscovery;
-  *p++ = staticRoute;
-  *p++ = nisDomainName;
-  *p++ = nisServers;
-  *p++ = ntpServers;
-  *p++ = dnsSearchPath;
-  /* FQDN option (81) replaces HostName option (12) if requested */
-  if (( HostName ) && ( SetFQDNHostName == FQDNdisable ))
-    {
-      *p++ = hostName;
-      *p++ = HostName_len;
-      memcpy(p,HostName,HostName_len);
-      p += HostName_len;
-    }
-  *p++ = dhcpClassIdentifier;
-  *p++ = DhcpIface.class_len;
-  memcpy(p,DhcpIface.class_id,DhcpIface.class_len);
-  p += DhcpIface.class_len;
-  memcpy(p,DhcpIface.client_id,DhcpIface.client_len);
-  p += DhcpIface.client_len;
-  if (( HostName ) && ( SetFQDNHostName != FQDNdisable ))
-    {
-      /* Draft IETF DHC-FQDN option (81) */
-      *p++ = dhcpFQDNHostName;
-      *p++ = HostName_len + 3;
-      /* Flags: 0000NEOS
-       * S: 1 => Client requests Server to update A RR in DNS as well as PTR
-       * O: 1 => Server indicates to client that DNS has been updated regardless
-       * E: 1 => Name data is DNS format, i.e. <4>host<6>domain<4>com<0> not "host.domain.com"
-       * N: 1 => Client requests Server to not update DNS
-       */
-      *p++ = SetFQDNHostName & 0x9;
-      *p++ = 0; /* rcode1, response from DNS server to DHCP for PTR RR */
-      *p++ = 0; /* rcode2, response from DNS server to DHCP for A RR if S=1 */
-      memcpy(p,HostName,HostName_len);
-      p += HostName_len;
-    }
-  *p = endOption;
-
-  udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,
-	   DhcpIface.ciaddr,INADDR_BROADCAST,
-	   htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),sizeof(dhcpMessage));
+  udpipgen ((udpiphdr *) UdpIpMsgSend.udpipmsg,
+	    DhcpIface.ciaddr, DhcpIface.siaddr,
+	    htons (DHCP_CLIENT_PORT), htons (DHCP_SERVER_PORT),
+	    sizeof (dhcpMessage));
 }
-/*****************************************************************************/
-void buildDhcpReboot(xid)
-    unsigned xid;
+
+void buildDhcpRebind(unsigned xid)
 {
-  register unsigned char *p = DhcpMsgSend->options + 4;
+  buildDhcpMessage(xid, DHCP_REQUEST);
 
-  /* build Ethernet header */
-  memset(&UdpIpMsgSend,0,sizeof(udpipMessage));
-  memcpy(UdpIpMsgSend.ethhdr.ether_dhost,MAC_BCAST_ADDR,ETH_ALEN);
-  memcpy(UdpIpMsgSend.ethhdr.ether_shost,ClientHwAddr,ETH_ALEN);
-  UdpIpMsgSend.ethhdr.ether_type = htons(ETHERTYPE_IP);
-
-  DhcpMsgSend->op	=	DHCP_BOOTREQUEST;
-  DhcpMsgSend->htype	=	(TokenRingIf) ? ARPHRD_IEEE802_TR : ARPHRD_ETHER;
-  DhcpMsgSend->hlen	=	ETH_ALEN;
-  DhcpMsgSend->xid	=	xid;
-  DhcpMsgSend->secs	=	htons(10);
-  if ( BroadcastResp )
-    DhcpMsgSend->flags	=	htons(BROADCAST_FLAG);
-#if 0
-  memcpy(DhcpMsgSend->chaddr,DhcpIface.chaddr,ETH_ALEN);
-#else
-  memcpy(DhcpMsgSend->chaddr,ClientHwAddr,ETH_ALEN);
-#endif
-  memcpy(DhcpMsgSend->options,&magic_cookie,4);
-
-  *p++ = dhcpMessageType;
-  *p++ = 1;
-  *p++ = DHCP_REQUEST;
-  *p++ = dhcpMaxMsgSize;
-  *p++ = 2;
-  memcpy(p,&dhcpMsgSize,2);
-  p += 2;
-  if ( BeRFC1541 )
-    DhcpMsgSend->ciaddr = DhcpIface.ciaddr;
-  else
-    {
-      *p++ = dhcpRequestedIPaddr;
-      *p++ = 4;
-      memcpy(p,&DhcpIface.ciaddr,4);
-      p += 4;
-    }
-  *p++ = dhcpIPaddrLeaseTime;
-  *p++ = 4;
-  memcpy(p,&nleaseTime,4);
-  p += 4;
-  *p++ = dhcpParamRequest;
-  *p++ = 15;
-  *p++ = subnetMask;
-  *p++ = routersOnSubnet;
-  *p++ = dns;
-  *p++ = hostName;
-  *p++ = domainName;
-  *p++ = rootPath;
-  *p++ = defaultIPTTL;
-  *p++ = broadcastAddr;
-  *p++ = performMaskDiscovery;
-  *p++ = performRouterDiscovery;
-  *p++ = staticRoute;
-  *p++ = nisDomainName;
-  *p++ = nisServers;
-  *p++ = ntpServers;
-  *p++ = dnsSearchPath;
-  /* FQDN option (81) replaces HostName option (12) if requested */
-  if (( HostName ) && ( SetFQDNHostName == FQDNdisable ))
-    {
-      *p++ = hostName;
-      *p++ = HostName_len;
-      memcpy(p,HostName,HostName_len);
-      p += HostName_len;
-    }
-  *p++ = dhcpClassIdentifier;
-  *p++ = DhcpIface.class_len;
-  memcpy(p,DhcpIface.class_id,DhcpIface.class_len);
-  p += DhcpIface.class_len;
-  memcpy(p,DhcpIface.client_id,DhcpIface.client_len);
-  p += DhcpIface.client_len;
-  if (( HostName ) && ( SetFQDNHostName != FQDNdisable ))
-    {
-      /* Draft IETF DHC-FQDN option (81) */
-      *p++ = dhcpFQDNHostName;
-      *p++ = HostName_len + 3;
-      /* Flags: 0000NEOS
-       * S: 1 => Client requests Server to update A RR in DNS as well as PTR
-       * O: 1 => Server indicates to client that DNS has been updated regardless
-       * E: 1 => Name data is DNS format, i.e. <4>host<6>domain<4>com<0> not "host.domain.com"
-       * N: 1 => Client requests Server to not update DNS
-       */
-      *p++ = SetFQDNHostName & 0x9;
-      *p++ = 0; /* rcode1, response from DNS server to DHCP for PTR RR */
-      *p++ = 0; /* rcode2, response from DNS server to DHCP for A RR if S=1 */
-      memcpy(p,HostName,HostName_len);
-      p += HostName_len;
-    }
-  *p = endOption;
-
-  udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,0,INADDR_BROADCAST,
-	   htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),sizeof(dhcpMessage));
+  udpipgen ((udpiphdr *) UdpIpMsgSend.udpipmsg,
+	    DhcpIface.ciaddr, INADDR_BROADCAST,
+	    htons (DHCP_CLIENT_PORT), htons (DHCP_SERVER_PORT),
+	    sizeof (dhcpMessage));
 }
-/*****************************************************************************/
-void buildDhcpRelease(xid)
-    unsigned xid;
-{
-  register unsigned char *p = DhcpMsgSend->options + 4;
-  memset(&UdpIpMsgSend,0,sizeof(udpipMessage));
-  memcpy(UdpIpMsgSend.ethhdr.ether_dhost,DhcpIface.shaddr,ETH_ALEN);
-  memcpy(UdpIpMsgSend.ethhdr.ether_shost,ClientHwAddr,ETH_ALEN);
-  UdpIpMsgSend.ethhdr.ether_type = htons(ETHERTYPE_IP);
 
-  DhcpMsgSend->op	=	DHCP_BOOTREQUEST;
-  DhcpMsgSend->htype	=	(TokenRingIf) ? ARPHRD_IEEE802_TR : ARPHRD_ETHER;
-  DhcpMsgSend->hlen	=	ETH_ALEN;
-  DhcpMsgSend->xid	=	xid;
-  DhcpMsgSend->ciaddr	=	DhcpIface.ciaddr;
-#if 0
-  memcpy(DhcpMsgSend->chaddr,DhcpIface.chaddr,ETH_ALEN);
-#else
-  memcpy(DhcpMsgSend->chaddr,ClientHwAddr,ETH_ALEN);
-#endif
-  memcpy(DhcpMsgSend->options,&magic_cookie,4);
-  *p++ = dhcpMessageType;
-  *p++ = 1;
+void buildDhcpReboot(unsigned xid)
+{
+  buildDhcpMessage(xid, DHCP_REQUEST);
+
+  udpipgen ((udpiphdr *) UdpIpMsgSend.udpipmsg, 0, INADDR_BROADCAST,
+	    htons (DHCP_CLIENT_PORT), htons (DHCP_SERVER_PORT),
+	    sizeof (dhcpMessage));
+}
+
+void buildDhcpInform(unsigned xid)
+{
+  buildDhcpMessage(xid, DHCP_INFORM);
+
+  udpipgen ((udpiphdr *) UdpIpMsgSend.udpipmsg, 0, INADDR_BROADCAST,
+	    htons (DHCP_CLIENT_PORT), htons (DHCP_SERVER_PORT),
+	    sizeof (dhcpMessage));
+}
+
+void buildDhcpRelease(unsigned xid)
+{
+  register unsigned char *p = buildDhcpHeader(xid);
+
   *p++ = DHCP_RELEASE;
   *p++ = dhcpServerIdentifier;
   *p++ = 4;
-  memcpy(p,DhcpOptions.val[dhcpServerIdentifier],4);
+  memcpy (p, DhcpOptions.val[dhcpServerIdentifier], 4);
   p += 4;
-  memcpy(p,DhcpIface.client_id,DhcpIface.client_len);
+  memcpy (p, DhcpIface.client_id, DhcpIface.client_len);
   p += DhcpIface.client_len;
   *p = endOption;
 
-  udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,DhcpIface.ciaddr,
-	   DhcpIface.siaddr,htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),
-	   sizeof(dhcpMessage));
+  udpipgen ((udpiphdr *) UdpIpMsgSend.udpipmsg, DhcpIface.ciaddr,
+	    DhcpIface.siaddr, htons (DHCP_CLIENT_PORT),
+	    htons (DHCP_SERVER_PORT), sizeof (dhcpMessage));
 }
 /*****************************************************************************/
-void buildDhcpDecline(xid)
-    unsigned xid;
+void buildDhcpDecline(unsigned xid)
 {
-  register unsigned char *p = DhcpMsgSend->options + 4;
-  memset(&UdpIpMsgSend,0,sizeof(udpipMessage));
-  memcpy(UdpIpMsgSend.ethhdr.ether_dhost,DhcpIface.shaddr,ETH_ALEN);
-  memcpy(UdpIpMsgSend.ethhdr.ether_shost,ClientHwAddr,ETH_ALEN);
-  UdpIpMsgSend.ethhdr.ether_type = htons(ETHERTYPE_IP);
+  register unsigned char *p = buildDhcpHeader(xid); 
 
-  DhcpMsgSend->op	=	DHCP_BOOTREQUEST;
-  DhcpMsgSend->htype	=	(TokenRingIf) ? ARPHRD_IEEE802_TR : ARPHRD_ETHER;
-  DhcpMsgSend->hlen	=	ETH_ALEN;
-  DhcpMsgSend->xid	=	xid;
-#if 0
-  memcpy(DhcpMsgSend->chaddr,DhcpIface.chaddr,ETH_ALEN);
-#else
-  memcpy(DhcpMsgSend->chaddr,ClientHwAddr,ETH_ALEN);
-#endif
-  memcpy(DhcpMsgSend->options,&magic_cookie,4);
-  *p++ = dhcpMessageType;
-  *p++ = 1;
   *p++ = DHCP_DECLINE;
   *p++ = dhcpServerIdentifier;
   *p++ = 4;
-  memcpy(p,DhcpOptions.val[dhcpServerIdentifier],4);
+  memcpy (p, DhcpOptions.val[dhcpServerIdentifier], 4);
   p += 4;
-  if ( BeRFC1541 )
+  if (BeRFC1541)
     DhcpMsgSend->ciaddr = DhcpIface.ciaddr;
   else
     {
       *p++ = dhcpRequestedIPaddr;
       *p++ = 4;
-      memcpy(p,&DhcpIface.ciaddr,4);
+      memcpy (p, &DhcpIface.ciaddr, 4);
       p += 4;
     }
-  memcpy(p,DhcpIface.client_id,DhcpIface.client_len);
+  memcpy (p, DhcpIface.client_id, DhcpIface.client_len);
   p += DhcpIface.client_len;
   *p = endOption;
 
-  udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,0,
-	   DhcpIface.siaddr,htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),
-	   sizeof(dhcpMessage));
+  udpipgen((udpiphdr *) UdpIpMsgSend.udpipmsg, 0,
+	   DhcpIface.siaddr, htons (DHCP_CLIENT_PORT),
+	   htons (DHCP_SERVER_PORT), sizeof (dhcpMessage));
 }
-/*****************************************************************************/
-void buildDhcpInform(xid)
-    unsigned xid;
-{
-  register unsigned char *p = DhcpMsgSend->options + 4;
 
-  memset(&UdpIpMsgSend,0,sizeof(udpipMessage));
-  memcpy(UdpIpMsgSend.ethhdr.ether_dhost,MAC_BCAST_ADDR,ETH_ALEN);
-  memcpy(UdpIpMsgSend.ethhdr.ether_shost,ClientHwAddr,ETH_ALEN);
-  UdpIpMsgSend.ethhdr.ether_type = htons(ETHERTYPE_IP);
-
-  DhcpMsgSend->op	=	DHCP_BOOTREQUEST;
-  DhcpMsgSend->htype	=	(TokenRingIf) ? ARPHRD_IEEE802_TR : ARPHRD_ETHER;
-  DhcpMsgSend->hlen	=	ETH_ALEN;
-  DhcpMsgSend->xid	=	xid;
-  DhcpMsgSend->secs	=       htons(10);
-  if ( BroadcastResp )
-    DhcpMsgSend->flags	=	htons(BROADCAST_FLAG);
-#if 0
-  memcpy(DhcpMsgSend->chaddr,DhcpIface.chaddr,ETH_ALEN);
-#else
-  memcpy(DhcpMsgSend->chaddr,ClientHwAddr,ETH_ALEN);
-#endif
-  DhcpMsgSend->ciaddr = inform_ipaddr.s_addr;
-  memcpy(DhcpMsgSend->options,&magic_cookie,4);
-  *p++ = dhcpMessageType;
-  *p++ = 1;
-  *p++ = DHCP_INFORM;
-  *p++ = dhcpMaxMsgSize;
-  *p++ = 2;
-  memcpy(p,&dhcpMsgSize,2);
-  p += 2;
-  *p++ = dhcpParamRequest;
-  *p++ = 15;
-  *p++ = subnetMask;
-  *p++ = routersOnSubnet;
-  *p++ = dns;
-  *p++ = hostName;
-  *p++ = domainName;
-  *p++ = rootPath;
-  *p++ = defaultIPTTL;
-  *p++ = broadcastAddr;
-  *p++ = performMaskDiscovery;
-  *p++ = performRouterDiscovery;
-  *p++ = staticRoute;
-  *p++ = nisDomainName;
-  *p++ = nisServers;
-  *p++ = ntpServers;
-  *p++ = dnsSearchPath;
-  /* FQDN option (81) replaces HostName option (12) if requested */
-  if (( HostName ) && ( SetFQDNHostName == FQDNdisable ))
-    {
-      *p++ = hostName;
-      *p++ = HostName_len;
-      memcpy(p,HostName,HostName_len);
-      p += HostName_len;
-    }
-  *p++ = dhcpClassIdentifier;
-  *p++ = DhcpIface.class_len;
-  memcpy(p,DhcpIface.class_id,DhcpIface.class_len);
-  p += DhcpIface.class_len;
-  memcpy(p,DhcpIface.client_id,DhcpIface.client_len);
-  p += DhcpIface.client_len;
-  if (( HostName ) && ( SetFQDNHostName != FQDNdisable ))
-    {
-      /* Draft IETF DHC-FQDN option (81) */
-      *p++ = dhcpFQDNHostName;
-      *p++ = HostName_len + 3;
-      /* Flags: 0000NEOS
-       * S: 1 => Client requests Server to update A RR in DNS as well as PTR
-       * O: 1 => Server indicates to client that DNS has been updated regardless
-       * E: 1 => Name data is DNS format, i.e. <4>host<6>domain<4>com<0> not "host.domain.com"
-       * N: 1 => Client requests Server to not update DNS
-       */
-      *p++ = SetFQDNHostName & 0x9;
-      *p++ = 0; /* rcode1, response from DNS server to DHCP for PTR RR */
-      *p++ = 0; /* rcode2, response from DNS server to DHCP for A RR if S=1 */
-      memcpy(p,HostName,HostName_len);
-      p += HostName_len;
-    }
-  *p = endOption;
-
-  udpipgen((udpiphdr *)UdpIpMsgSend.udpipmsg,0,INADDR_BROADCAST,
-	   htons(DHCP_CLIENT_PORT),htons(DHCP_SERVER_PORT),sizeof(dhcpMessage));
-}
