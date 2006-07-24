@@ -13,29 +13,12 @@ dnl
 AC_PROG_CC
 AC_PROG_INSTALL
 
-dnl
-dnl Enable extra options via configure 
-dnl
-AC_ARG_ENABLE(debug,
-	      AC_HELP_STRING([--enable-debug], [Enables extra debug messages]),
-	      enable_debug="${enableval}", enable_debug="no")
-if test "${enable_debug}" = "yes"; then
-    AC_DEFINE(DEBUG, , [Define to enable extra debug messages])
-fi
-
-AC_ARG_ENABLE(embed,
-	      C_HELP_STRING([--enable-embed],
-			     [vfork() instead of fork() for embedded environs]),
-	      enable_embed="${enableval}", enable_embed="no")
-if test "${enable_embed}" = "yes"; then
-    AC_DEFINE(EMBED, , [Define to use vfork() instead of fork()])
-fi
 
 dnl
 dnl Add the -Wall flag if we're using GCC
 dnl
 if test "$GCC" = "yes"; then
-    CFLAGS="${CFLAGS} -Wall"
+    CFLAGS="$CFLAGS -Wall"
 fi
 
 dnl
@@ -71,5 +54,27 @@ AC_CHECK_FUNCS(select socket uname alarm dup2 gethostbyaddr gethostname \
 	       echo "Required function not found"
 	       exit 1
 	       )
+
+dnl
+dnl Enable extra options via configure 
+dnl
+AC_ARG_ENABLE(debug,
+	      AC_HELP_STRING([--enable-debug], [Enables extra debug messages]),
+	      enable_debug="$enableval", enable_debug="no")
+if test "$enable_debug" = "yes"; then
+    AC_DEFINE(DEBUG, , [Define to enable extra debug messages])
+fi
+
+AC_ARG_ENABLE(embed,
+	      C_HELP_STRING([--enable-embed],
+			     [vfork() instead of fork() for embedded environs]),
+	      enable_embed="$enableval", enable_embed="no")
+if test "$enable_embed" = "yes"; then
+    if test "$ac_cv_func_vfork_works" != "yes"; then
+	AC_ERROR([Embedded requested, but you have no working vfork()!])
+    fi
+    AC_DEFINE(fork, vfork, [Use vfork instead of fork])
+    AC_DEFINE(EMBED, ,[Define to enable embedded])
+fi
 
 AC_OUTPUT

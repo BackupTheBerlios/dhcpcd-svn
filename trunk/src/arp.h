@@ -1,10 +1,10 @@
 /*
- * peekfd.c
- * 
+ * dhcpcd - DHCP client daemon -
+ * Copyright (C) 1996 - 1997 Yoichi Hariguchi <yoichi@fore.com>
  * Copyright (C) January, 1998 Sergei Viznyuk <sv@phystech.com>
  * Copyright (C) 2005 - 2006 Roy Marples <uberlord@gentoo.org>
  * Copyright (C) 2005 - 2006 Simon Kelley <simon@thekelleys.org.uk>
- * 
+ *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -20,26 +20,11 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include "config.h"
+#ifndef ARP_H
+#define ARP_H
 
-int peekfd (int s, time_t tv_usec)
-{
-  fd_set fs;
-  struct timeval tv;
+int arpCheck();
+int arpRelease();
+int arpInform();
 
-  FD_ZERO (&fs);
-  FD_SET (s, &fs);
-  tv.tv_sec = tv_usec / 1000000;
-  tv.tv_usec = tv_usec % 1000000;
-
-  if (select( s + 1, &fs, NULL, NULL, &tv) == -1)
-    return -1;
-
-  if (FD_ISSET(s, &fs))
-    return 0;
-
-  return 1;
-}
+#endif

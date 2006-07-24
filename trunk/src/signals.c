@@ -45,115 +45,130 @@ extern int		execOnStop;
 
 sigjmp_buf		jmpTerm;
 
-/*****************************************************************************/
-void killPid(sig)
-    int sig;
+void killPid (int sig)
 {
   FILE *fp;
   pid_t pid;
   char pidfile[64];
-  snprintf(pidfile,sizeof(pidfile),PID_FILE_PATH,IfNameExt);
-  fp=fopen(pidfile,"r");
-  if ( fp == NULL ) goto ntrn;
-  fscanf(fp,"%u",&pid);
-  fclose(fp);
-  if ( kill(pid,sig) )
+
+  snprintf (pidfile, sizeof (pidfile), PID_FILE_PATH, IfNameExt);
+  if ((fp = fopen (pidfile, "r")) == NULL)
+    goto ntrn;
+
+  fscanf (fp, "%u", &pid);
+  fclose (fp);
+
+  if (kill (pid,sig))
     {
-      unlink(pidfile);
-ntrn: if ( sig == SIGALRM ) return;
-      logger(LOG_ERR,"%s: not running", ProgramName);
+      unlink (pidfile);
+ntrn: if (sig == SIGALRM) return;
+      logger (LOG_ERR, "%s: not running", ProgramName);
     }
+
   exit(0);
 }
-/*****************************************************************************/
-void writePidFile(pid_t pid)
+
+void writePidFile (pid_t pid)
 {
   FILE *fp;
   char pidfile[64];
-  snprintf(pidfile,sizeof(pidfile),PID_FILE_PATH,IfNameExt);
-  fp=fopen(pidfile,"w");
-  if ( fp == NULL )
+
+  snprintf (pidfile, sizeof (pidfile), PID_FILE_PATH, IfNameExt);
+  if ((fp = fopen (pidfile, "w")) == NULL)
     {
-      logger(LOG_ERR, "writePidFile: fopen: %s", strerror(errno));
+      logger (LOG_ERR, "writePidFile: fopen: %s", strerror (errno));
       exit(1);
     }
-  fprintf(fp,"%u\n",pid);
+
+  fprintf (fp, "%u\n", pid);
   fclose (fp);
 }
-/*****************************************************************************/
+
 void deletePidFile()
 {
   char pidfile[64];
-  snprintf(pidfile,sizeof(pidfile),PID_FILE_PATH,IfNameExt);
-  unlink(pidfile);
+
+  snprintf (pidfile, sizeof (pidfile), PID_FILE_PATH, IfNameExt);
+  unlink (pidfile);
 }
-/*****************************************************************************/
-void sigHandler(sig)
-    int sig;
+
+void sigHandler (sig)
 {
-  if( sig == SIGCHLD )
+  if(sig == SIGCHLD)
     {
-      waitpid(-1,NULL,WNOHANG);
+      waitpid (-1, NULL, WNOHANG);
       return;
     }
-  if ( sig == SIGALRM )
+
+  if (sig == SIGALRM)
     {
-      if ( currState == &dhcpBound )
-	siglongjmp(env,1); /* this timeout is T1 */
+      if (currState == &dhcpBound)
+	siglongjmp (env, 1); /* this timeout is T1 */
       else
 	{
-	  if ( currState == &dhcpRenew )
-	    siglongjmp(env,2); /* this timeout is T2 */
+	  if (currState == &dhcpRenew)
+	    siglongjmp (env, 2); /* this timeout is T2 */
 	  else
 	    {
-	      if ( currState == &dhcpRebind )
-		siglongjmp(env,3);  /* this timeout is dhcpIpLeaseTime */
+	      if (currState == &dhcpRebind)
+		siglongjmp (env, 3);  /* this timeout is dhcpIpLeaseTime */
 	      else
 		{
-		  if ( currState == &dhcpReboot )
-		    siglongjmp(env,4);  /* failed to acquire the same IP address */
+		  if (currState == &dhcpReboot)
+		    siglongjmp (env, 4);  /* failed to acquire the same IP address */
 		  else
-		    logger(LOG_ERR, "timed out waiting for a valid DHCP server response");
+		    logger (LOG_ERR, "timed out waiting for a valid DHCP server response");
 		}
 	    }
 	}
     }
   else
     {
-      if ( sig == SIGHUP ) 
+      if (sig == SIGHUP) 
 	{
-	  dhcpRelease();
+	  dhcpRelease ();
 	  /* allow time for final packets to be transmitted before shutting down     */
 	  /* otherwise 2.0 drops unsent packets. fixme: find a better way than sleep */
-	  sleep(1);
+	  sleep (1);
 	}
-      logger(LOG_ERR, "terminating on signal %d",sig);
+      logger (LOG_ERR, "terminating on signal %d",sig);
     }
-  if (sig == SIGTERM) siglongjmp(jmpTerm, 1);
-  if (!Persistent) dhcpStop();
-  deletePidFile();
+
+  if (sig == SIGTERM)
+    siglongjmp (jmpTerm, 1);
+
+  if (!Persistent)
+    dhcpStop ();
+
+  deletePidFile ();
 
   /* Exit with 0 if we were told to quit, otherwise the SIG code */
   if (sig == SIGQUIT || sig == SIGINT || sig == SIGHUP)
-    exit(0);
+    exit (0);
   else
-    exit(sig);
+    exit (sig);
 }
 /*****************************************************************************/
-void signalSetup()
+void signalSetup ()
 {
   int i;
   struct sigaction action;
-  sigaction(SIGHUP,NULL,&action);
+
+  sigaction (SIGHUP, NULL, &action);
   action.sa_handler= &sigHandler;
   action.sa_flags = 0;
-  for (i=1;i<16;i++) sigaction(i,&action,NULL);
-  sigaction(SIGCHLD,&action,NULL);
+
+  for (i = 1; i < 16; i++)
+    sigaction (i, &action, NULL);
+
+  sigaction (SIGCHLD, &action, NULL);
 
   /* We do this so that we can call external programs safely from a SIGTERM */
-  if ( sigsetjmp(jmpTerm, 1) ) {
-    if (!Persistent) dhcpStop();
-    deletePidFile();
-    exit(0);
+  if (sigsetjmp (jmpTerm, 1)) {
+    if (!Persistent)
+      dhcpStop ();
+
+    deletePidFile ();
+    exit (0);
   }
 }

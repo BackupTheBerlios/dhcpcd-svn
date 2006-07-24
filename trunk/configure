@@ -2894,38 +2894,9 @@ test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL}'
 test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
 
-# Check whether --enable-debug or --disable-debug was given.
-if test "${enable_debug+set}" = set; then
-  enableval="$enable_debug"
-  enable_debug="${enableval}"
-else
-  enable_debug="no"
-fi;
-if test "${enable_debug}" = "yes"; then
-
-cat >>confdefs.h <<\_ACEOF
-#define DEBUG
-_ACEOF
-
-fi
-
-# Check whether --enable-embed or --disable-embed was given.
-if test "${enable_embed+set}" = set; then
-  enableval="$enable_embed"
-  enable_embed="${enableval}"
-else
-  enable_embed="no"
-fi;
-if test "${enable_embed}" = "yes"; then
-
-cat >>confdefs.h <<\_ACEOF
-#define EMBED
-_ACEOF
-
-fi
 
 if test "$GCC" = "yes"; then
-    CFLAGS="${CFLAGS} -Wall"
+    CFLAGS="$CFLAGS -Wall"
 fi
 
 
@@ -5171,6 +5142,46 @@ else
 fi
 done
 
+
+# Check whether --enable-debug or --disable-debug was given.
+if test "${enable_debug+set}" = set; then
+  enableval="$enable_debug"
+  enable_debug="$enableval"
+else
+  enable_debug="no"
+fi;
+if test "$enable_debug" = "yes"; then
+
+cat >>confdefs.h <<\_ACEOF
+#define DEBUG
+_ACEOF
+
+fi
+
+# Check whether --enable-embed or --disable-embed was given.
+if test "${enable_embed+set}" = set; then
+  enableval="$enable_embed"
+  enable_embed="$enableval"
+else
+  enable_embed="no"
+fi;
+if test "$enable_embed" = "yes"; then
+    if test "$ac_cv_func_vfork_works" != "yes"; then
+	{ { echo "$as_me:$LINENO: error: Embedded requested, but you have no working vfork()!" >&5
+echo "$as_me: error: Embedded requested, but you have no working vfork()!" >&2;}
+   { (exit 1); exit 1; }; }
+    fi
+
+cat >>confdefs.h <<\_ACEOF
+#define fork vfork
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define EMBED
+_ACEOF
+
+fi
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure

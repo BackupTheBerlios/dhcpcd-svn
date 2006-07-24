@@ -26,6 +26,7 @@
 #define CLIENT_H
 
 #include "config.h"
+#include <signals.h>
 
 #ifdef __GLIBC__
 #include <net/ethernet.h>
@@ -218,5 +219,18 @@ void *dhcpRelease();
 void *dhcpStop();
 void *dhcpInform();
 void *dhcpDecline();
+
+int eth2tr(struct packed_ether_header *frame, int datalen);
+int tr2eth(struct packed_ether_header *frame);
+
+extern int    			TokenRingIf;
+extern int			dhcpSocket;
+extern int			udpFooSocket;
+extern int			prev_ip_addr;
+extern time_t			ReqSentTime;
+extern dhcpOptions		DhcpOptions;
+extern dhcpInterface		DhcpIface;
+extern unsigned char		ClientHwAddr[ETH_ALEN];
+extern dhcpMessage 		*DhcpMsgRecv;
 
 #endif

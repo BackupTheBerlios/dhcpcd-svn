@@ -22,47 +22,10 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include "pathnames.h"
-#include "kversion.h"
-#include "client.h"
-#include "dhcpcd.h"
+#ifndef CACHE_H
+#define CACHE_H
 
-extern	char		*ConfigDir;
-extern	char		*IfNameExt;
-extern	int		prev_ip_addr;
-extern	dhcpInterface	DhcpIface;
+int readDhcpCache();
+void deleteDhcpCache();
 
-char cache_file[128];
-
-int readDhcpCache()
-{
-  int i, o;
-  snprintf (cache_file, sizeof (cache_file),
-	    DHCP_CACHE_FILE, ConfigDir, IfNameExt);
-  if ((i = open (cache_file, O_RDONLY)) == - 1)
-    return -1;
-
-  o = read (i, (char *) &DhcpIface, sizeof (dhcpInterface));
-  close (i);
-
-  if (o != sizeof (dhcpInterface))
-    return -1;
-  if (strncmp (DhcpIface.version, VERSION ,sizeof(DhcpIface.version)))
-    return -1;
-
-  prev_ip_addr = DhcpIface.ciaddr;
-  return 0;
-}
-
-void deleteDhcpCache()
-{
-  snprintf (cache_file, sizeof (cache_file), DHCP_CACHE_FILE,
-	    ConfigDir, IfNameExt);
-  unlink (cache_file);
-}
+#endif

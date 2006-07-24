@@ -51,7 +51,7 @@ int		IfNameExt_len	=	DEFAULT_IFNAME_LEN;
 char		*HostName	=	NULL;
 int		HostName_len	=	0;
 char		*Cfilename	=	NULL;
-char		*ClassID	=	NULL;
+unsigned char	*ClassID	=	NULL;
 int		ClassID_len	=	0;
 unsigned char	*ClientID	=	NULL;
 int		ClientID_len	=	0;
@@ -95,43 +95,50 @@ int		SetFQDNHostName	=	FQDNdisable;
 
 extern	int	LogLevel;
 
-/*****************************************************************************/
+#define STRINGINT(_string, _int) { \
+  char *_tmp; \
+  int _number = strtol (_string, &_tmp, 0); \
+  if (_string[0] == '\0' || *_tmp != '\0' ) \
+  goto usage; \
+  if ((errno == ERANGE && \
+       (_number == LONG_MAX || _number == LONG_MIN )) || \
+      (_number > INT_MAX || _number < INT_MIN)) \
+  goto usage; \
+  _int = _number; \
+}
+
 void print_version()
 {
-  fprintf(stderr,"\
-	  DHCP Client Daemon v."VERSION"\n\
-	  Copyright (C) 1996 - 1997 Yoichi Hariguchi <yoichi@fore.com>\n\
-	  Copyright (C) January, 1998 Sergei Viznyuk <sv@phystech.com>\n\
-	  Copyright (C) 2005 - 2006 Roy Marples <uberlord@gentoo.org>\n\
-	  Simon Kelley <simon@thekelleys.org.uk>\n\
-	  Location: http://developer.berlios.de/projects/dhcpcd/\n\n");
+  fprintf (stderr, "\
+	   DHCP Client Daemon v."VERSION"\n\
+	   Copyright (C) 1996 - 1997 Yoichi Hariguchi <yoichi@fore.com>\n\
+	   Copyright (C) January, 1998 Sergei Viznyuk <sv@phystech.com>\n\
+	   Copyright (C) 2005 - 2006 Roy Marples <uberlord@gentoo.org>\n\
+	   Simon Kelley <simon@thekelleys.org.uk>\n\
+	   Location: http://developer.berlios.de/projects/dhcpcd/\n\n");
 }
-/*****************************************************************************/
+
 void checkIfAlreadyRunning()
 {
   int o;
   char pidfile[64];
-  snprintf(pidfile,sizeof(pidfile),PID_FILE_PATH, IfNameExt);
-  o=open(pidfile,O_RDONLY);
-  if ( o == -1 ) return;
-  close(o);
-  fprintf(stderr,"\
-	  ****  %s: already running\n\
-	  ****  %s: if not then delete %s file\n",ProgramName,ProgramName,pidfile);
-  exit(1);
+
+  snprintf (pidfile, sizeof (pidfile), PID_FILE_PATH, IfNameExt);
+  if ((o = open(pidfile,O_RDONLY)) == -1)
+    return;
+
+  close (o);
+  logger (LOG_ERR, "already running, if not then delete %s file", pidfile);
+  exit (1);
 }
-/*****************************************************************************/
-int main(argn,argc,argv)
-    int argn;
-    char *argc[],*argv[];
+
+int main(int argc, char **argv)
 {
-  int killFlag		=	0;
-  int versionFlag	=	0;
-  int s			=	1;
-  int k			=	1;
-  int i			=	1;
-  int j;
-  char *FQDNOption	=	NULL;
+  int killFlag = 0;
+  int versionFlag = 0;
+  int i;
+  char *FQDNOption = NULL;
+  char c;
 
   /*
    * Ensure that fds 0, 1, 2 are open, to /dev/null if nowhere else.
@@ -139,368 +146,326 @@ int main(argn,argc,argv)
    * a fd that we are using (such as our sockets). This is necessary if
    * this program is run from init scripts where 0, 1, and/or 2 may be closed.
    */
-  j=open("/dev/null",O_RDWR);
-  while ( j < 2 && j >= 0 ) j = dup(j);
-  if ( j > 2 ) close(j);
+  i = open ("/dev/null", O_RDWR);
+  while ( i < 2 && i >= 0 )
+    i = dup (i);
 
-  if ( geteuid() )
+  if (i > 2)
+    close (i);
+
+  openlog (PACKAGE, LOG_PID, LOG_LOCAL0);
+
+  if (geteuid())
     {
-      fprintf(stderr,"%s: not a superuser\n",argc[0]);
-      exit(1);
+      logger (LOG_ERR, "not a superuser");
+      exit (1);
     }
 
-  while ( argc[i] )
-    if ( argc[i][0]=='-' )
-      prgs: switch ( argc[i][s] )
-	{
-	  char *tmp;
-	  long m;
-	case 0:
-	  i++;
-	  s=1;
-	  break;
-	case 'a':
-	  s++;
-	  DoARP = 0;
-	  goto prgs;
-	case 'p':
-	  s++;
-	  Persistent = 1;
-	  goto prgs;
-	case 'k':
-	  s++;
-	  killFlag=SIGHUP;
-	  goto prgs;
-	case 'm':
-	  if ( argc[i][s+1] ) goto usage;
-	  i++;
-	  if ( ! argc[i] ) goto usage;
-	  errno = 0;
-	  m=strtol(argc[i], &tmp, 0);
-	  if (argc[i][0] == '\0' || *tmp != '\0' ) goto usage;
-	  if ((errno == ERANGE &&
-	       (m == LONG_MAX || m == LONG_MIN )) ||
-	      (m > INT_MAX || m < INT_MIN))
-	    goto usage;
-	  RouteMetric=m;
-	  if (RouteMetric < INT_MAX) RouteMetric++;
-	  i++;
-	  s=1;
-	  break;
-	case 'n':
-	  s++;
-	  killFlag=SIGALRM;
-	  goto prgs;
-	case 'v':
-	  if ( argc[i][s+1] ) goto usage;
-	  i++;
-	  if ( ! argc[i] ) goto usage;
-	  if ((LogLevel = log_to_level(argc[i])) < 0)
-	    LogLevel = atoi(argc[i]);
-	  i++;
-	  break;
-	case 'd':
-	  s++;
-	  LogLevel = log_to_level("LOG_DEBUG");
-	  break;
-	case 'r':
-	  s++;
-	  BeRFC1541=1;
-	  goto prgs;
-	case 'D':
-	  s++;
-	  SetDomainName=1;
-	  goto prgs;
-	case 'H':
-	  s++;
-	  SetHostName=1;
-	  goto prgs;
-	case 'R':
-	  s++;
-	  ReplResolvConf=0;
-	  goto prgs;
-	case 'Y':
-	  s++;
-	  ReplNISConf=0;
-	  goto prgs;
-	case 'N':
-	  s++;
-	  ReplNTPConf=0;
-	  goto prgs;
-	case 'V':
-	  s++;
-	  versionFlag=1;
-	  goto prgs;
-	case 'c':
-	  if ( argc[i][s+1] ) goto usage;
-	  i++;
-	  Cfilename=argc[i++];
-	  if ( Cfilename == NULL || Cfilename[0] == '-' ) goto usage;
-	  s=1;
-	  break;
-	case 'L':
-	  if ( argc[i][s+1] ) goto usage;
-	  i++;
-	  ConfigDir=argc[i++];
-	  if ( ConfigDir == NULL || ConfigDir[0] != '/' ) goto usage;
-	  s=1;
-	  break;
-	case 'e':
-	  if (argc[i][s+1] ) goto usage;
-	  i++;
-	  etcDir=argc[i++];
-	  if (etcDir == NULL || etcDir[0] != '/' ) goto usage;
-	  s=1;
-	  break;
-#if 0
-	case 'M':
-	  if ( argc[i][s+1] ) goto usage;
-	  i++;
-	  if ( argc[i] == NULL ) goto usage;
-	  if ( isxdigit(argc[i][0]) && isxdigit(argc[i][1]) && argc[i][2] == ':' )
-	    ClientMACaddr[0] = 16*(argc[i][0]>64?(toupper(argc[i][0])-55):(argc[i][0]-48)) +
-									   (argc[i][1]>64?(toupper(argc[i][1])-55):(argc[i][1]-48));
-	  else
-	    goto usage;
-	  if ( isxdigit(argc[i][3]) && isxdigit(argc[i][4]) && argc[i][5] == ':' )
-	    ClientMACaddr[1] = 16*(argc[i][3]>64?(toupper(argc[i][3])-55):(argc[i][3]-48)) +
-									   (argc[i][4]>64?(toupper(argc[i][4])-55):(argc[i][4]-48));
-	  else
-	    goto usage;
-	  if ( isxdigit(argc[i][6]) && isxdigit(argc[i][7]) && argc[i][8] == ':' )
-	    ClientMACaddr[2] = 16*(argc[i][6]>64?(toupper(argc[i][6])-55):(argc[i][6]-48)) +
-									   (argc[i][7]>64?(toupper(argc[i][7])-55):(argc[i][7]-48));
-	  else
-	    goto usage;
-	  if ( isxdigit(argc[i][9]) && isxdigit(argc[i][10]) && argc[i][11] == ':' )
-	    ClientMACaddr[3] = 16*(argc[i][9]>64?(toupper(argc[i][9])-55):(argc[i][9]-48)) +
-									   (argc[i][10]>64?(toupper(argc[i][10])-55):(argc[i][10]-48));
-	  else
-	    goto usage;
-	  if ( isxdigit(argc[i][12]) && isxdigit(argc[i][13]) && argc[i][14] == ':' )
-	    ClientMACaddr[4] = 16*(argc[i][12]>64?(toupper(argc[i][12])-55):(argc[i][12]-48)) +
-									     (argc[i][13]>64?(toupper(argc[i][13])-55):(argc[i][13]-48));
-	  else
-	    goto usage;
-	  if ( isxdigit(argc[i][15]) && isxdigit(argc[i][16]) )
-	    ClientMACaddr[5] = 16*(argc[i][15]>64?(toupper(argc[i][15])-55):(argc[i][15]-48)) +
-									     (argc[i][16]>64?(toupper(argc[i][16])-55):(argc[i][16]-48));
-	  else
-	    goto usage;
-	  s=1;
-	  i++;
-	  ClientMACaddr_ind=1;
-	  break;
-#endif
-	case 'i':
-	  if ( argc[i][s+1] ) goto usage;
-	  i++;
-	  ClassID=argc[i++];
-	  if ( ClassID == NULL || ClassID[0] == '-' ) goto usage;
-	  s=1;
-	  if ( (ClassID_len=strlen(ClassID)) < CLASS_ID_MAX_LEN+1 ) break;
-	  fprintf(stderr,"****  %s: too long ClassID string: strlen=%d\n",
-		  argc[0],ClassID_len);
+  while ((c = getopt (argc, argv,
+		      "adknoprBCDHNRSTYl:h:t:i:I:c:s::w:L:G::e:m:F:v:")) != -1)
+    switch (c)
+      {
+      case 'a':
+	DoARP = 0;
+	break;
+
+      case 'p':
+	Persistent = 1;
+	break;
+
+      case 'k':
+	killFlag = SIGHUP;
+	break;
+
+      case 'm':
+	STRINGINT(optarg, RouteMetric);
+	break;
+
+      case 'n':
+	killFlag = SIGALRM;
+	break;
+
+      case 'v':
+	if ((LogLevel = log_to_level (optarg)) < 0)
+	  STRINGINT(optarg, LogLevel);
+	break;
+
+      case 'd':
+	LogLevel = log_to_level("LOG_DEBUG");
+	break;
+
+      case 'r':
+	BeRFC1541 = 1;
+	break;
+
+      case 'D':
+	SetDomainName = 1;
+	break;
+
+      case 'H':
+	SetHostName = 1;
+	break;
+
+      case 'R':
+	ReplResolvConf = 0;
+	break;
+
+      case 'Y':
+	ReplNISConf = 0;
+	break;
+
+      case 'N':
+	ReplNTPConf = 0;
+	break;
+
+      case 'V':
+	versionFlag=1;
+	break;
+
+      case 'c':
+	Cfilename = optarg;
+	if (Cfilename == NULL || Cfilename[0] == '-')
 	  goto usage;
-	case 'I':
-	  if ( argc[i][s+1] ) goto usage;
-	  i++;
-	  ClientID=(unsigned char *)argc[i++];
-	  if ( ClientID == NULL || ClientID[0] == '-' ) goto usage;
-	  s=1;
-	  if ( (ClientID_len=strlen((char *)ClientID)) < CLIENT_ID_MAX_LEN+1 )
-	    break;
-	  fprintf(stderr,"****  %s: too long ClientID string: strlen=%d\n",
-		  argc[0],ClientID_len);
+	break;
+
+      case 'L':
+	ConfigDir = optarg;
+	if (ConfigDir == NULL || ConfigDir[0] != '/')
 	  goto usage;
-	case 'h':
-	  if ( argc[i][s+1] ) goto usage;
-	  i++;
-	  HostName=argc[i++];
-	  if ( HostName == NULL || HostName[0] == '-' ) goto usage;
-	  s=1;
-	  if ( (HostName_len=strlen(HostName)+1) < HOSTNAME_MAX_LEN ) break;
-	  fprintf(stderr,"****  %s: too long HostName string: strlen=%d\n",
-		  argc[0],HostName_len);
-	  break;
-	case 'F':
-	  if ( argc[i][s+1] ) goto usage;
-	  i++;
-	  FQDNOption=argc[i++];
-	  if ( FQDNOption == NULL || FQDNOption[0] == '-' ) goto usage;
-	  if ( strcmp(FQDNOption,"none") == 0 )
-	    SetFQDNHostName=FQDNnone;
-	  else if ( strcmp(FQDNOption,"ptr") == 0 )
-	    SetFQDNHostName=FQDNptr;
-	  else if ( strcmp(FQDNOption,"both") == 0 )
-	    SetFQDNHostName=FQDNboth;
-	  else
-	    goto usage;
-	  s=1;
-	  break;
-	case 't':
-	  if ( argc[i][s+1] ) goto usage;
-	  i++;
-	  if ( argc[i] )
-	    TimeOut=atol(argc[i++]);
-	  else
-	    goto usage;
-	  s=1;
-	  if ( TimeOut >= 0 ) break;
+	break;
+
+      case 'e':
+	etcDir = optarg;
+	if (etcDir == NULL || etcDir[0] != '/')
 	  goto usage;
-	case 'w':
-	  if ( argc[i][s+1] ) goto usage;
-	  i++;
-	  if ( argc[i] )
-	    Window=atol(argc[i++]);
-	  else
-	    goto usage;
-	  s=1;
-	  if ( Window >= 0 ) break;
+	break;
+
+      case 'i':
+	ClassID = (unsigned char *) optarg;
+	if (ClassID == NULL || ClassID[0] == '-')
 	  goto usage;
-	case 's':
-	  if ( argc[i][s+1] ) goto usage;
-	  i++;
-	  if ( argc[i] && inet_aton(argc[i],&inform_ipaddr) )
-	    i++;
-	  else
-	    memset(&inform_ipaddr,0,sizeof(inform_ipaddr));
-	  currState = &dhcpInform;
-	  s=1;
+
+	if ((ClassID_len = strlen ((char *)ClassID)) < CLASS_ID_MAX_LEN + 1 )
 	  break;
-	case 'G':
-	  if ( argc[i][s+1] ) goto usage;
-	  SetDHCPDefaultRoutes=0;
-	  i++;
-	  if ( argc[i] && inet_aton(argc[i],&default_router) )
-	    i++;
-	  else
-	    memset(&default_router,0,sizeof(default_router));
-	  s=1;
+
+	logger (LOG_ERR, " %s: too long ClassID string: strlen=%d",
+		optarg, ClassID_len);
+	goto usage;
+
+      case 'I':
+	ClientID = (unsigned char *) optarg;
+	if (ClientID == NULL || ClientID[0] == '-')
+	  goto usage;
+
+	if ((ClientID_len = strlen ((char *) ClientID)) < CLIENT_ID_MAX_LEN + 1)
 	  break;
-	case 'B':
-	  s++;
-	  BroadcastResp=1;
-	  goto prgs;
-	case 'C':
-	  s++;
-	  DoCheckSum=1;
-	  goto prgs;
-	case 'T':
-	  s++;
-	  TestCase=1;
-	  goto prgs;
-	case 'S':
-	  s++;
-	  SendSecondDiscover=1;
-	  goto prgs;
-	case 'l':
-	  if ( argc[i][s+1] ) goto usage;
-	  i++;
-	  if ( argc[i] )
-	    LeaseTime=atol(argc[i++]);
-	  else
-	    goto usage;
-	  s=1;
-	  if ( LeaseTime > 0 ) break;
-	case 'o':
-	  s++;
-	  DownIfaceOnStop=0;
+	logger (LOG_ERR,"%s: too long ClientID string: strlen=%d",
+		optarg, ClientID_len);
+	goto usage;
+
+      case 'h':
+	HostName = optarg;
+	if (HostName == NULL || HostName[0] == '-')
+	  goto usage;
+
+	if ((HostName_len = strlen(HostName) + 1) < HOSTNAME_MAX_LEN )
 	  break;
-	default:
-usage:	    print_version();
-	    fprintf(stderr,
-		    "Usage: dhcpcd [-adknoprBCDHNRSTY] [-l leasetime] [-h hostname] [-t timeout]\n\
-		    [-i vendorClassID] [-I ClientID] [-c filename] [-s [ipaddr]]\n\
-		    [-w windowsize] [-L ConfigDir] [-G [gateway]] [-e etcDir]\n\
-		    [-m routeMetric] [-F none|ptr|both]\n\
-		    [-v logLevel] [interface]\n");
-	    exit(1);
-	}
-    else
-      argc[k++]=argc[i++];
-  if ( k > 1 )
-    {
-      if ( (IfNameExt_len=strlen(argc[1])) > IFNAMSIZ ) goto usage;
-      IfNameExt=argc[1];
-      IfName=IfNameExt;
-      IfName_len=IfNameExt_len;
-      s=0;
-      while ( IfNameExt[s] )
-	if ( IfNameExt[s] == ':' )
+
+	logger (LOG_ERR,"%s: too long HostName string: strlen=%d\n",
+		optarg, HostName_len);
+	goto usage;
+
+      case 'F':
+	FQDNOption = optarg;
+	if ( FQDNOption == NULL || FQDNOption[0] == '-' )
+	  goto usage;
+
+	if (strcmp (FQDNOption, "none") == 0)
+	  SetFQDNHostName = FQDNnone;
+	else if (strcmp (FQDNOption, "ptr") == 0)
+	  SetFQDNHostName = FQDNptr;
+	else if (strcmp (FQDNOption, "both") == 0)
+	  SetFQDNHostName = FQDNboth;
+	else
+	  goto usage;
+	break;
+
+      case 't':
+	STRINGINT (optarg, TimeOut);
+	if (TimeOut >= 0)
+	  break;
+	goto usage;
+
+      case 'w':
+	STRINGINT (optarg, Window);
+	if ( Window >= 0 )
+	  break;
+	goto usage;
+
+      case 's':
+	if (inet_aton (optarg, &inform_ipaddr))
 	  {
-	    IfName=(char *)malloc(s+1);
-	    memcpy(IfName,IfNameExt,s);
-	    IfName[s]=0;
-	    IfName_len=s;
+	    memset (&inform_ipaddr, 0 ,sizeof (inform_ipaddr));
+	    currState = &dhcpInform;
+	    break;
+	  }
+	goto usage;
+
+      case 'G':
+	SetDHCPDefaultRoutes=0;
+	if (inet_aton (optarg, &default_router))
+	  {
+	    memset(&default_router,0,sizeof(default_router));
+	    break;
+	  }
+	goto usage;
+
+      case 'B':
+	BroadcastResp=1;
+	break;
+
+      case 'C':
+	DoCheckSum = 1;
+	break;
+
+      case 'T':
+	TestCase = 1;
+	break;
+
+      case 'S':
+	SendSecondDiscover = 1;
+	break;
+
+      case 'l':
+	STRINGINT (optarg, LeaseTime);
+	if ( LeaseTime > 0 )
+	  break;
+	goto usage;
+
+      case 'o':
+	DownIfaceOnStop = 0;
+	break;
+
+      case '?':
+	if (isprint (optopt))
+	  logger (LOG_ERR, "Unknown option `-%c'", optopt);
+	else
+	  logger (LOG_ERR, "Unknown option character `\\x%x'", optopt);
+	return 1;
+
+usage:
+      default:
+	print_version();
+	fprintf(stderr,
+		"Usage: dhcpcd [-adknoprBCDHNRSTY] [-l leasetime] [-h hostname] [-t timeout]\n\
+		[-i vendorClassID] [-I ClientID] [-c filename] [-s [ipaddr]]\n\
+		[-w windowsize] [-L ConfigDir] [-G [gateway]] [-e etcDir]\n\
+		[-m routeMetric] [-F none|ptr|both]\n\
+		[-v logLevel] [interface]\n");
+	exit(1);
+      }
+
+  if ( optind < argc )
+    {
+      if ((IfNameExt_len = strlen (argv[optind])) > IFNAMSIZ)
+	{
+	  logger (LOG_ERR,"%s is too long for an interface name (max=%d)",
+		  argv[optind], IFNAMSIZ);
+	  goto usage;
+	}
+
+      IfNameExt = argv[optind];
+      IfName = IfNameExt;
+      IfName_len = IfNameExt_len;
+      i = 0;
+      while (IfNameExt[i])
+	if (IfNameExt[i] == ':')
+	  {
+	    IfName = (char *) malloc (i + 1);
+	    memcpy(IfName, IfNameExt, i);
+	    IfName[i] = 0;
+	    IfName_len = i;
 	    break;
 	  }
 	else
-	  s++;
+	  i ++;
     }
 
-  ProgramName=argc[0];
-  ProgramEnviron=argv;
-  umask(022);
-  if ( killFlag ) killPid(killFlag);
-  if ( ! TestCase ) checkIfAlreadyRunning();
-  if ( versionFlag ) print_version();
-  openlog(PACKAGE,LOG_PID,LOG_LOCAL0);
-  signalSetup();
-  if ( mkdir(ConfigDir,S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH) && errno != EEXIST )
+  ProgramName = argv[0];
+  ProgramEnviron = argv;
+  umask (022);
+
+  if (killFlag)
+    killPid (killFlag);
+
+  if (!TestCase)
+    checkIfAlreadyRunning ();
+
+  if (versionFlag)
+    print_version ();
+
+  signalSetup ();
+
+  if (mkdir (ConfigDir, S_IRUSR |S_IWUSR |S_IXUSR | S_IRGRP | S_IXGRP
+	     | S_IROTH | S_IXOTH) && errno != EEXIST )
     {
       logger(LOG_ERR, "mkdir(\"%s\",0): %s\n", ConfigDir, strerror(errno));
       exit(1);
     }
-  if ( mkdir(etcDir,S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH) && errno != EEXIST )
+
+  if ( mkdir (etcDir, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP
+	      | S_IROTH | S_IXOTH) && errno != EEXIST )
     {
       logger(LOG_ERR, "mkdir(\"%s\",0): %s\n", etcDir, strerror(errno));
       exit(1);
     }
-  snprintf(resolv_file, sizeof(resolv_file), RESOLV_FILE, etcDir);
-  snprintf(resolv_file_sv, sizeof(resolv_file_sv), ""RESOLV_FILE"-%s.sv", etcDir, IfName);
-  snprintf(nis_file, sizeof(nis_file), NIS_FILE, etcDir);
-  snprintf(nis_file_sv, sizeof(nis_file_sv), ""NIS_FILE"-%s.sv", etcDir, IfName);
-  snprintf(ntp_file, sizeof(ntp_file), NTP_FILE, etcDir);
-  snprintf(ntp_file_sv, sizeof(ntp_file_sv), ""NTP_FILE"-%s.sv", etcDir, IfName);
 
-  magic_cookie = htonl(MAGIC_COOKIE);
-  dhcpMsgSize = htons(sizeof(dhcpMessage)+sizeof(udpiphdr));
-  nleaseTime = htonl(LeaseTime);
+  snprintf (resolv_file, sizeof (resolv_file), RESOLV_FILE, etcDir);
+  snprintf (resolv_file_sv, sizeof (resolv_file_sv), ""RESOLV_FILE"-%s.sv",
+	    etcDir, IfName);
+  snprintf (nis_file, sizeof (nis_file), NIS_FILE, etcDir);
+  snprintf (nis_file_sv, sizeof (nis_file_sv), ""NIS_FILE"-%s.sv",
+	    etcDir, IfName);
+  snprintf (ntp_file, sizeof (ntp_file), NTP_FILE, etcDir);
+  snprintf (ntp_file_sv, sizeof (ntp_file_sv), ""NTP_FILE"-%s.sv",
+	    etcDir, IfName);
+
+  magic_cookie = htonl (MAGIC_COOKIE);
+  dhcpMsgSize = htons (sizeof (dhcpMessage) + sizeof (udpiphdr));
+  nleaseTime = htonl (LeaseTime);
+
   if (TimeOut != 0)
     alarm(TimeOut);
+
   do
-    if ( (currState=(void *(*)())currState()) == NULL ) exit(1);
+    if ((currState = (void *(*)()) currState ()) == NULL )
+      exit (1);
   while ( currState != &dhcpBound );
-#if 0
-  if ( TestCase ) exit(0);
-#endif
+
   alarm(0);
 #ifdef DEBUG
   writePidFile(getpid());
 #else
-#ifdef EMBED
-  s=vfork();
-#else
-  s=fork();
-#endif
-  if ( s )
+  if ((i = fork ()))
     {
-      writePidFile(s);
-      exit(0); /* got into bound state. */
+      writePidFile (i);
+      exit (0); /* got into bound state. */
     }
   Daemonized = 1;
-  setsid();
-  if ( (i=open("/dev/null",O_RDWR,0)) >= 0 )
+  setsid ();
+  if ((i = open("/dev/null", O_RDWR, 0)) >= 0)
     {
-      (void)dup2(i,STDIN_FILENO);
-      (void)dup2(i,STDOUT_FILENO);
-      (void)dup2(i,STDERR_FILENO);
-      if ( i > 2 ) (void)close(i);
+      (void) dup2(i, STDIN_FILENO);
+      (void) dup2(i, STDOUT_FILENO);
+      (void) dup2(i, STDERR_FILENO);
+      if (i > 2) (void) close (i);
     }
 #endif
-  chdir("/");
-  do currState=(void *(*)())currState(); while ( currState );
-  deletePidFile();
-  exit(1);
+  chdir ("/");
+  do
+    currState = (void *(*)()) currState ();
+  while ( currState );
+
+  deletePidFile ();
+  exit (1);
 }

@@ -3,7 +3,7 @@
 /* Define to enable extra debug messages */
 #undef DEBUG
 
-/* Define to use vfork() instead of fork() */
+/* Define to enable embedded */
 #undef EMBED
 
 /* Define to 1 if you have the `alarm' function. */
@@ -168,6 +168,9 @@
 
 /* Define to empty if `const' does not conform to ANSI C. */
 #undef const
+
+/* Use vfork instead of fork */
+#undef fork
 
 /* Define to rpl_malloc if the replacement function should be used. */
 #undef malloc
