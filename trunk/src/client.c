@@ -770,24 +770,21 @@ int dhcpSendAndRecv(unsigned xid, unsigned msg, void (*buildUdpIpMsg)(unsigned))
 	      continue;
 	    }
 
-	  if (DoCheckSum)
+	  len = udpipchk ((udpiphdr *) tmp_ip);
+	  if (len)
 	    {
-	      len = udpipchk ((udpiphdr *) tmp_ip);
-	      if (len)
+	      switch (len)
 		{
-		  switch (len)
-		    {
-		    case -1: logger(LOG_DEBUG,
-				    "corrupted IP packet with ip_len=%d discarded",
-				    (int) ntohs (ipRecv_local.ip_len));
-			     break;
-		    case -2: logger(LOG_DEBUG,
-				    "corrupted UDP msg with uh_ulen=%d discarded",
-				    (int) ntohs(udpRecv->uh_ulen));
-			     break;
-		    }
-		  continue;
+		case -1: logger(LOG_DEBUG,
+				"corrupted IP packet with ip_len=%d discarded",
+				(int) ntohs (ipRecv_local.ip_len));
+			 break;
+		case -2: logger(LOG_DEBUG,
+				"corrupted UDP msg with uh_ulen=%d discarded",
+				(int) ntohs(udpRecv->uh_ulen));
+			 break;
 		}
+	      continue;
 	    }
 
 	  DhcpMsgRecv = (dhcpMessage *) &tmp_ip[(ipRecv_local.ip_hl << 2)

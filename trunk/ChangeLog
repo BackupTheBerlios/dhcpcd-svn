@@ -5,6 +5,8 @@
 
    Applied GNU styling to the entire code base, making it easier to read.
 
+   Removed the -C checksum option as we now force checksums.
+
 22 Jul 2006; Roy Marples <uberlord@gentoo.org>
 
    Accepted patch from Bert Van Leeuwen to not resolve our hostname

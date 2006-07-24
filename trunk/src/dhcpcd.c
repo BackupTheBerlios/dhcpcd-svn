@@ -69,7 +69,6 @@ time_t          TimeOut         =	DEFAULT_TIMEOUT;
 int 		magic_cookie    =       0;
 unsigned short  dhcpMsgSize     =       0;
 unsigned        nleaseTime      =       0;
-int		DoCheckSum	=	0;
 int		TestCase	=	0;
 int		SendSecondDiscover	=	0;
 int		Window		=	0;
@@ -162,7 +161,7 @@ int main(int argc, char **argv)
     }
 
   while ((c = getopt (argc, argv,
-		      "adknoprBCDHNRSTYl:h:t:i:I:c:s::w:L:G::e:m:F:v:")) != -1)
+		      "adknoprBDHNRSTYl:h:t:i:I:c:s::w:L:G::e:m:F:v:")) != -1)
     switch (c)
       {
       case 'a':
@@ -322,10 +321,6 @@ int main(int argc, char **argv)
 
       case 'B':
 	BroadcastResp=1;
-	break;
-
-      case 'C':
-	DoCheckSum = 1;
 	break;
 
       case 'T':

@@ -47,7 +47,6 @@ extern  void		*(*currState)();
 extern  time_t          TimeOut;
 extern  unsigned        nleaseTime;
 extern  struct in_addr  inform_ipaddr;
-extern	int		DoCheckSum;
 extern	int		TestCase;
 extern	int		resolv_renamed,yp_renamed,ntp_renamed;
 extern	int		DownIfaceOnStop;
