@@ -3,7 +3,7 @@
    Re-wrote buildmsg.c so that we only have 1 code block to actually make
    the message, making future expansion easier.
 
-   Applied GNU styling to the entire code base, making it easir to read.
+   Applied GNU styling to the entire code base, making it easier to read.
 
 22 Jul 2006; Roy Marples <uberlord@gentoo.org>
 
