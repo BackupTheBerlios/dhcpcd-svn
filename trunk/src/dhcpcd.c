@@ -340,7 +340,7 @@ usage:
       default:
 	print_version();
 	fprintf(stderr,
-		"Usage: dhcpcd [-adknoprBCDHNRSTY] [-l leasetime] [-h hostname] [-t timeout]\n\
+		"Usage: dhcpcd [-adknopBDHNRSTY] [-l leasetime] [-h hostname] [-t timeout]\n\
 		[-i vendorClassID] [-I ClientID] [-c filename] [-s [ipaddr]]\n\
 		[-w windowsize] [-L ConfigDir] [-G [gateway]] [-e etcDir]\n\
 		[-m routeMetric] [-F none|ptr|both]\n\
