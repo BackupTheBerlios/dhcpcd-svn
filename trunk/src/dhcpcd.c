@@ -78,11 +78,6 @@ int		Persistent	=	0;
 int		DownIfaceOnStop	=	1;
 int		DoARP		=	1;
 
-#if 0
-unsigned char	ClientMACaddr[ETH_ALEN];
-int		ClientMACaddr_ind =	0;
-#endif
-
 char		*etcDir		=	ETC_DIR;
 char		resolv_file[128];
 char		resolv_file_sv[128];
@@ -92,11 +87,9 @@ char		ntp_file[128];
 char		ntp_file_sv[128];
 int		SetFQDNHostName	=	FQDNdisable;
 
-extern	int	LogLevel;
-
 #define STRINGINT(_string, _int) { \
   char *_tmp; \
-  int _number = strtol (_string, &_tmp, 0); \
+  long _number = strtol (_string, &_tmp, 0); \
   if (_string[0] == '\0' || *_tmp != '\0' ) \
   goto usage; \
   if ((errno == ERANGE && \

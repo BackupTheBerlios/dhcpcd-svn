@@ -25,31 +25,14 @@
 #include <string.h>
 #include <netinet/in.h>
 #include <net/if_arp.h>
+
+#include "dhcpcd.h"
 #include "client.h"
 #include "udpipgen.h"
 
-extern	dhcpMessage	*DhcpMsgSend;
-extern	dhcpOptions	DhcpOptions;
-extern  dhcpInterface   DhcpIface;
-extern	char		*HostName;
-extern	int		HostName_len;
-extern	int		BeRFC1541;
-extern	unsigned	LeaseTime;
-extern	int		TokenRingIf;
-extern	unsigned char	ClientHwAddr[6];
-extern  udpipMessage	UdpIpMsgSend;
-extern  int 		magic_cookie;
-extern  unsigned short  dhcpMsgSize;
-extern  unsigned        nleaseTime;
-extern  int             BroadcastResp;
-extern  struct in_addr  inform_ipaddr;
-
-extern	int		SetFQDNHostName;
-
-
 static unsigned char * buildDhcpHeader (unsigned xid)
 {
-  register unsigned char *p = DhcpMsgSend->options + 4;
+  unsigned char *p = DhcpMsgSend->options + 4;
 
   memset (&UdpIpMsgSend, 0, sizeof (udpipMessage));
   memcpy (UdpIpMsgSend.ethhdr.ether_dhost, MAC_BCAST_ADDR, ETH_ALEN);
@@ -73,7 +56,8 @@ static unsigned char * buildDhcpHeader (unsigned xid)
 
 static void buildDhcpMessage (unsigned xid, u_char op)
 {
-  register unsigned char *p = buildDhcpHeader (xid);
+  unsigned char *p = buildDhcpHeader (xid);
+  unsigned char *noParams = NULL;
 
   *p++ = op;
   *p++ = dhcpMaxMsgSize;
@@ -99,8 +83,11 @@ static void buildDhcpMessage (unsigned xid, u_char op)
   memcpy (p, &nleaseTime, 4);
   p += 4;
   *p++ = dhcpParamRequest;
-  *p++ = 15;
+
+  noParams = p;
+  *p++ = 0;
   *p++ = subnetMask;
+  *p++ = classlessStaticRoutes; /* RFC 3442 states this is prior to routers */
   *p++ = routersOnSubnet;
   *p++ = dns;
   *p++ = hostName;
@@ -115,14 +102,34 @@ static void buildDhcpMessage (unsigned xid, u_char op)
   *p++ = nisServers;
   *p++ = ntpServers;
   *p++ = dnsSearchPath;
-
-  /* FQDN option (81) replaces HostName option (12) if requested */
-  if ((HostName) && (SetFQDNHostName == FQDNdisable))
+  *noParams = p - noParams - 1;
+  
+  if (HostName) 
     {
-      *p++ = hostName;
-      *p++ = HostName_len;
-      memcpy (p, HostName, HostName_len);
-      p += HostName_len;
+      if (SetFQDNHostName == FQDNdisable)
+	{
+	  *p++ = hostName;
+	  *p++ = HostName_len;
+	  memcpy (p, HostName, HostName_len);
+	  p += HostName_len;
+	}
+      else
+	{
+	  /* Draft IETF DHC-FQDN option (81) */
+	  *p++ = dhcpFQDNHostName;
+	  *p++ = HostName_len + 3;
+	  /* Flags: 0000NEOS
+	   * S: 1 => Client requests Server to update A RR in DNS as well as PTR
+	   * O: 1 => Server indicates to client that DNS has been updated
+	   * E: 1 => Name data is DNS format
+	   * N: 1 => Client requests Server to not update DNS
+	   */
+	  *p++ = SetFQDNHostName & 0x9;
+	  *p++ = 0; /* rcode1, response from DNS server for PTR RR */
+	  *p++ = 0; /* rcode2, response from DNS server for A RR if S=1 */
+	  memcpy (p, HostName, HostName_len);
+	  p += HostName_len;
+	}
     }
 
   *p++ = dhcpClassIdentifier;
@@ -131,24 +138,6 @@ static void buildDhcpMessage (unsigned xid, u_char op)
   p += DhcpIface.class_len;
   memcpy (p, DhcpIface.client_id, DhcpIface.client_len);
   p += DhcpIface.client_len;
-
-  if ((HostName) && (SetFQDNHostName != FQDNdisable))
-    {
-      /* Draft IETF DHC-FQDN option (81) */
-      *p++ = dhcpFQDNHostName;
-      *p++ = HostName_len + 3;
-      /* Flags: 0000NEOS
-       * S: 1 => Client requests Server to update A RR in DNS as well as PTR
-       * O: 1 => Server indicates to client that DNS has been updated regardless
-       * E: 1 => Name data is DNS format, i.e. <4>host<6>domain<4>com<0> not "host.domain.com"
-       * N: 1 => Client requests Server to not update DNS
-       */
-      *p++ = SetFQDNHostName & 0x9;
-      *p++ = 0; /* rcode1, response from DNS server to DHCP for PTR RR */
-      *p++ = 0; /* rcode2, response from DNS server to DHCP for A RR if S=1 */
-      memcpy (p, HostName, HostName_len);
-      p += HostName_len;
-    }
 
   *p = endOption;
 }
@@ -211,7 +200,7 @@ void buildDhcpInform(unsigned xid)
 
 void buildDhcpRelease(unsigned xid)
 {
-  register unsigned char *p = buildDhcpHeader(xid);
+  unsigned char *p = buildDhcpHeader(xid);
 
   *p++ = DHCP_RELEASE;
   *p++ = dhcpServerIdentifier;
@@ -229,7 +218,7 @@ void buildDhcpRelease(unsigned xid)
 /*****************************************************************************/
 void buildDhcpDecline(unsigned xid)
 {
-  register unsigned char *p = buildDhcpHeader(xid); 
+  unsigned char *p = buildDhcpHeader(xid); 
 
   *p++ = DHCP_DECLINE;
   *p++ = dhcpServerIdentifier;

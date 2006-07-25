@@ -116,22 +116,23 @@ dhcpcd_SOURCES = \
 	logger.c		\
 	logger.h		\
 	peekfd.c		\
+	peekfd.h		\
 	udpipgen.c		\
+	udpipgen.h		\
 	buildmsg.c		\
+	buildmsg.h		\
 	signals.c		\
+	signals.h		\
 	arp.c			\
+	arp.h			\
 	dhcpconfig.c		\
 	client.c		\
-	cache.c			\
-	dhcpcd.c		\
-	signals.h		\
-	buildmsg.h		\
 	client.h		\
+	cache.c			\
+	cache.h			\
+	dhcpcd.c		\
 	dhcpcd.h		\
-	pathnames.h		\
-	signals.h		\
-	kversion.h		\
-	udpipgen.h
+	pathnames.h		
 
 
 configdir = ${sysconfdir}/dhcpc

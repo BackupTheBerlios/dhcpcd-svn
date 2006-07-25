@@ -31,8 +31,9 @@
 #include <string.h>
 #include <errno.h>
 
-#include "client.h"
 #include "dhcpcd.h"
+#include "client.h"
+#include "peekfd.h"
 #include "logger.h"
 
 typedef struct arpMessage

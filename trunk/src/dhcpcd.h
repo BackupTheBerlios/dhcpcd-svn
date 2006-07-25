@@ -31,8 +31,9 @@
 extern	char		*ProgramName;
 extern	char		*IfName,*IfNameExt;
 extern	int		IfName_len,IfNameExt_len;
-extern struct in_addr	default_router;
+extern  struct in_addr	default_router;
 extern	char		*HostName;
+extern  int		HostName_len;
 extern	unsigned char	*ClassID;
 extern	int		ClassID_len;
 extern  unsigned char	*ClientID;
@@ -60,6 +61,9 @@ extern	int		Window;
 extern  char            **ProgramEnviron;
 extern  int		SetDHCPDefaultRoutes;
 extern  char		*ConfigDir;
+extern  int		magic_cookie;
+extern  unsigned short  dhcpMsgSize;
+extern	int		BroadcastResp;
 
 extern	char		resolv_file[128];
 extern	char		resolv_file_sv[128];

@@ -52,7 +52,7 @@
 #include "buildmsg.h"
 #include "udpipgen.h"
 #include "pathnames.h"
-#include "kversion.h"
+#include "peekfd.h"
 #include "logger.h"
 
 int	dhcpConfig();
@@ -70,7 +70,7 @@ unsigned char		ClientHwAddr[ETH_ALEN];
 
 const struct ip *ipSend=(struct ip *)((struct udpiphdr *)UdpIpMsgSend.udpipmsg)->ip;
 const struct ip *ipRecv=(struct ip *)((struct udpiphdr *)UdpIpMsgRecv.udpipmsg)->ip;
-const dhcpMessage *DhcpMsgSend = (dhcpMessage *)&UdpIpMsgSend.udpipmsg[sizeof(udpiphdr)];
+dhcpMessage *DhcpMsgSend = (dhcpMessage *)&UdpIpMsgSend.udpipmsg[sizeof(udpiphdr)];
 dhcpMessage *DhcpMsgRecv = (dhcpMessage *)&UdpIpMsgRecv.udpipmsg[sizeof(udpiphdr)];
 
 extern sigjmp_buf env;
@@ -149,13 +149,73 @@ static unsigned int decodeSearch (u_char *p, int len, u_char *out)
   return count;  
 }
 
+static unsigned int decodeCSR(u_char *p, int len, u_char *out)
+{
+  u_char *q = p;
+  int cidr, n_routes = 0, ocets, i;
+
+  while (q - p < len)
+    {
+      n_routes++;
+      cidr = (int) *q++;
+      ocets = cidr / 8;
+
+      /* If we're not storing, then just work out the length we would have
+	 read and continue */
+      if (! out)
+	{
+	  q += ocets + 4;
+	  continue;
+	}
+
+      if (ocets > 0)
+	{
+	  memcpy(out, q, ocets);
+	  q += ocets;
+	}
+      if (ocets < 4)
+	memset(out + ocets, 0, 4 - ocets);
+      out += 4;
+
+      /* Now enter the netmask */
+      if (ocets > 0)
+	{
+	  memset(out, 255, ocets);
+	  out += ocets;
+	}
+      if (ocets < 4)
+	{
+	  int cur = 128, sum = 0;
+	  for (i = 0; i < cidr % 8; i++)
+	    {
+	      sum += cur;
+	      cur /= 2;
+	    }
+	  memset(out++, sum, 1);
+	  if (ocets < 3) {
+	    memset(out, 4 - ocets, 0);
+	    out += 4 - ocets;
+	  }
+	}
+
+      /* Finally, snag the router */
+      memcpy(out, q, 4);
+      out += 4;
+      q += 4;
+    }
+
+  /* Each route is 12 bits */
+  return n_routes * 12;
+}
+
 int parseDhcpMsgRecv () /* this routine parses dhcp message received */
 {
 #ifdef DEBUG
-  int i,j;
+  int i, j, k;
 #endif
   register u_char *p = DhcpMsgRecv->options+4;
   unsigned char *end = DhcpMsgRecv->options+sizeof(DhcpMsgRecv->options);
+  unsigned int len;
 
   /* Force T1 and T2 to 0: either new values will be in message, or they
      will need to be recalculated from lease time */
@@ -170,45 +230,56 @@ int parseDhcpMsgRecv () /* this routine parses dhcp message received */
       case endOption: goto swend;
       case padOption: p++; break;
       case dnsSearchPath:
-		      {
-			unsigned int len;
+		      if (p + 2 + p[1] >= end)
+			goto swend; /* corrupt packet */
 
-			if (p + 2 + p[1] >= end)
-			  goto swend; /* corrupt packet */
+		      if ((len = decodeSearch (p+2, p[1], NULL)))
+			{
+			  if (DhcpOptions.val[*p])
+			    free (DhcpOptions.val[*p]);
+			  DhcpOptions.val[*p] = malloc (len);
+			  DhcpOptions.len[*p] = len;
+			  decodeSearch (p + 2, p[1], DhcpOptions.val[*p]);
+			}
+		      p += p[1] + 2;
+		      break;
 
-			if ((len = decodeSearch (p+2, p[1], NULL)))
-			  {
-			    if (DhcpOptions.val[*p])
-			      free (DhcpOptions.val[*p]);
-			    DhcpOptions.val[*p] = malloc (len);
-			    DhcpOptions.len[*p] = len;
-			    decodeSearch (p + 2, p[1], DhcpOptions.val[*p]);
-			  }
-			p += p[1] + 2;
-			break;
-		      }
+      case classlessStaticRoutes:
+		      if (p + 2 + p[1] >= end)
+			goto swend; /* corrupt packet */
+
+		      if ((len = decodeCSR (p + 2, p[1], NULL)))
+			{
+			  if (DhcpOptions.val[*p])
+			    free (DhcpOptions.val[*p]);
+			  DhcpOptions.val[*p] = malloc (len);
+			  DhcpOptions.len[*p] = len;
+			  decodeCSR(p + 2, p[1], DhcpOptions.val[*p]);
+			}
+		      p += p[1] + 2;
+		      break;
 
       default:
-		    if ( p[1] )
-		      {
-			if (p + 2 + p[1] >= end)
-			  goto swend; /* corrupt packet */
+		      if (p[1])
+			{
+			  if (p + 2 + p[1] >= end)
+			    goto swend; /* corrupt packet */
 
-			if (DhcpOptions.len[*p] == p[1])
-			  memcpy (DhcpOptions.val[*p], p + 2, p[1]);
-			else
-			  {
-			    DhcpOptions.len[*p] = p[1];
-			    if (DhcpOptions.val[*p])
-			      free (DhcpOptions.val[*p]);
-			    else
-			      DhcpOptions.num++;
-			    DhcpOptions.val[*p] = malloc (p[1] + 1);
-			    memset (DhcpOptions.val[*p], 0, p[1] + 1);
-			    memcpy (DhcpOptions.val[*p], p+2, p[1]);
-			  }
-		      }
-		    p += p[1] + 2;
+			  if (DhcpOptions.len[*p] == p[1])
+			    memcpy (DhcpOptions.val[*p], p + 2, p[1]);
+			  else
+			    {
+			      DhcpOptions.len[*p] = p[1];
+			      if (DhcpOptions.val[*p])
+				free (DhcpOptions.val[*p]);
+			      else
+				DhcpOptions.num++;
+			      DhcpOptions.val[*p] = malloc (p[1] + 1);
+			      memset (DhcpOptions.val[*p], 0, p[1] + 1);
+			      memcpy (DhcpOptions.val[*p], p+2, p[1]);
+			    }
+			}
+		      p += p[1] + 2;
       }
 
 swend:
@@ -261,6 +332,27 @@ swend:
 		   ((unsigned char *) DhcpOptions.val[i])[2],
 		   ((char *) DhcpOptions.val[i]) + 3);
 	  break;
+	case 121:/* classlessStaticRoutes */
+	  for (j = 0; j < DhcpOptions.len[i]; j+= 12)
+	    {
+	      fprintf (stderr, "i=%-2d  len=%-2d  option = ",
+		       i,DhcpOptions.len[i]);
+	      for (k = 0; k < 12; k++)
+		{
+		  if (k > 0)
+		    {
+		      if ((k % 4) == 0)
+			fprintf (stderr, " ");
+		      else
+			fprintf (stderr, ".");
+		    }
+		  fprintf (stderr, "%u",
+			   ((unsigned char *) DhcpOptions.val[i])[j + k]);
+		}
+	      fprintf (stderr, "\n");
+	    }
+	  break;
+
 	default:
 	  fprintf (stderr,"i=%-2d  len=%-2d  option = \"%s\"\n",
 		   i, DhcpOptions.len[i], (char *) DhcpOptions.val[i]);
@@ -1135,7 +1227,7 @@ void *dhcpRequest(unsigned xid, void (*buildDhcpMsg)(unsigned))
 	}
 
       logger (LOG_INFO,
-	      "verified %u.%u.%u.%u address is not in use",
+	      "verified address %u.%u.%u.%u is not in use",
 	      ((unsigned char *) &DhcpIface.ciaddr)[0],
 	      ((unsigned char *) &DhcpIface.ciaddr)[1],
 	      ((unsigned char *) &DhcpIface.ciaddr)[2],
@@ -1503,7 +1595,7 @@ void *dhcpInform ()
 	}
 
       logger (LOG_INFO,
-	      "verified %u.%u.%u.%u address is not in use",
+	      "verified address %u.%u.%u.%u is not in use",
 	      ((unsigned char *) &DhcpIface.ciaddr)[0],
 	      ((unsigned char *) &DhcpIface.ciaddr)[1],
 	      ((unsigned char *) &DhcpIface.ciaddr)[2],

@@ -138,6 +138,7 @@ enum
   dhcpClientIdentifier			=	61,
   dhcpFQDNHostName			=	81,
   dnsSearchPath                         =       119, /* RFC 3397 */
+  classlessStaticRoutes			=	121, /* RFC 3442 */
   endOption				=	255
 };
 
@@ -207,7 +208,6 @@ typedef struct dhcpOptions
   void   *val[256];
 } __attribute__((packed)) dhcpOptions;
 
-int peekfd(int s,int tv_usec);
 void *dhcpReboot();
 void *dhcpStart();
 void *dhcpInit();
@@ -232,5 +232,7 @@ extern dhcpOptions		DhcpOptions;
 extern dhcpInterface		DhcpIface;
 extern unsigned char		ClientHwAddr[ETH_ALEN];
 extern dhcpMessage 		*DhcpMsgRecv;
+extern dhcpMessage		*DhcpMsgSend;
+extern udpipMessage		UdpIpMsgSend,UdpIpMsgRecv;
 
 #endif

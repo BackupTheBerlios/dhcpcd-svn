@@ -28,8 +28,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
 #include "pathnames.h"
-#include "kversion.h"
 #include "client.h"
 #include "dhcpcd.h"
 

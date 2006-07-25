@@ -31,6 +31,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+
+#include "dhcpcd.h"
 #include "pathnames.h"
 #include "client.h"
 #include "logger.h"

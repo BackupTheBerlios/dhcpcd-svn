@@ -29,6 +29,7 @@
 #include <netinet/in.h>
 #include <net/route.h>
 #include <net/if.h>
+#include <arpa/inet.h>
 #include <arpa/nameser.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -41,11 +42,39 @@
 
 #include "arp.h"
 #include "config.h"
-#include "dhcpcd.h"
-#include "kversion.h"
 #include "pathnames.h"
 #include "client.h"
 #include "logger.h"
+
+extern  int                     DebugFlag;
+extern  int                     dhcpSocket;
+extern  int                     udpFooSocket;
+extern  int                     prev_ip_addr;
+extern  int                     Window;
+extern  int                     SetDHCPDefaultRoutes;
+extern  int                     TestCase;
+extern  int                     SetDomainName;
+extern  int                     SetHostName;
+extern  int                     ReplResolvConf;
+extern  int                     ReplNISConf;
+extern  int                     ReplNTPConf;
+extern  int                     RouteMetric;
+extern  int                     IfName_len,IfNameExt_len;
+extern  char                    *IfName,*IfNameExt,*Cfilename,*ConfigDir;
+extern  char                    **ProgramEnviron;
+extern  unsigned char           ClientHwAddr[ETH_ALEN],*ClientID;
+extern  struct in_addr          default_router;
+extern  dhcpInterface           DhcpIface;
+extern  dhcpOptions             DhcpOptions;
+
+extern  char                    resolv_file[128];
+extern  char                    resolv_file_sv[128];
+extern  char                    ntp_file[128];
+extern  char                    ntp_file_sv[128];
+extern  char                    nis_file[128];
+extern  char                    nis_file_sv[128];
+
+extern  int                     SetFQDNHostName;
 
 char	hostinfo_file[128];
 int	resolv_renamed=0; 
@@ -125,8 +154,8 @@ unsigned long getgenmask(unsigned long ip_in)	/* this is to guess genmask	*/
 
 int setDefaultRoute(char *route_addr)
 {
-  struct	rtentry		rtent;
-  struct	sockaddr_in	*p;
+  struct rtentry rtent;
+  struct sockaddr_in *p;
 
   memset (&rtent, 0, sizeof (struct rtentry));
   p = (struct sockaddr_in *) &rtent.rt_dst;
@@ -141,7 +170,7 @@ int setDefaultRoute(char *route_addr)
   rtent.rt_dev = IfNameExt;
   rtent.rt_metric = RouteMetric;
   rtent.rt_window = Window;
-  rtent.rt_flags = RTF_UP | RTF_GATEWAY |(Window ? RTF_WINDOW : 0);
+  rtent.rt_flags = RTF_UP | RTF_GATEWAY | (Window ? RTF_WINDOW : 0);
   
   if (ioctl( dhcpSocket, SIOCADDRT, &rtent) == -1)
     {
@@ -208,20 +237,77 @@ int islink(char *file)
   return (n == -1 ? 0 : 1);
 }
 
+int addRoute(char *network, char *gateway, char *genmask)
+{
+  struct rtentry rtent;
+  struct sockaddr_in *netp; 
+  struct sockaddr_in *genp; 
+  struct sockaddr_in *gwp;
+
+  if (!network || !gateway || !genmask)
+    return -1;
+
+  memset (&rtent, 0, sizeof (struct rtentry));
+
+  netp = (struct sockaddr_in *) &rtent.rt_dst;
+  netp->sin_family = AF_INET;
+  memcpy (&netp->sin_addr.s_addr, network, 4);
+
+  genp = (struct sockaddr_in *) &rtent.rt_genmask;
+  genp->sin_family = AF_INET;
+  memcpy (&genp->sin_addr.s_addr, genmask, 4);
+ 
+  gwp = (struct sockaddr_in *) &rtent.rt_gateway;
+  gwp->sin_family = AF_INET;
+  memcpy (&gwp->sin_addr.s_addr, gateway, 4);
+  
+  rtent.rt_flags = RTF_UP | RTF_GATEWAY;
+  if (genp->sin_addr.s_addr == 0xffffffff)
+    rtent.rt_flags |= RTF_HOST;
+
+  rtent.rt_dev = IfNameExt;
+  rtent.rt_metric = RouteMetric;
+
+  char *netd = strdup (inet_ntoa (netp->sin_addr));
+  char *gend = strdup (inet_ntoa (genp->sin_addr));
+  logger (LOG_INFO, "adding route to %s (%s) via %s", netd, gend,
+	  inet_ntoa(gwp->sin_addr));
+  if (netd)
+    free (netd);
+  if (gend)
+    free (gend);
+
+  if (ioctl (dhcpSocket, SIOCADDRT, &rtent) && errno != EEXIST)
+    {
+      logger (LOG_ERR, "dhcpConfig: ioctl SIOCADDRT: %s", strerror (errno));
+      return -1;
+    }
+
+  return 0;
+}
+
 int dhcpConfig()
 {
   int i;
   FILE *f = NULL;
   char hostinfo_file_old[128];
-  struct ifreq		ifr;
-  struct rtentry	rtent;
-  struct sockaddr_in	*p = (struct sockaddr_in *)&(ifr.ifr_addr);
-  struct hostent *hp=NULL;
-  char *dname=NULL;
-  int dname_len=0;
+  struct ifreq ifr;
+  struct rtentry rtent;
+  struct sockaddr_in *p = (struct sockaddr_in *) &(ifr.ifr_addr);
+  struct hostent *hp = NULL;
+  char *dname = NULL;
+  int dname_len = 0;
+  char network[5], gateway[5], genmask[5];
+  unsigned long gn;
 
   if (TestCase)
     goto tsc;
+ 
+  logger (LOG_INFO,"setting ip address to %u.%u.%u.%u on %s",
+	 ((unsigned char *) &DhcpIface.ciaddr)[0],
+	 ((unsigned char *) &DhcpIface.ciaddr)[1],
+	 ((unsigned char *) &DhcpIface.ciaddr)[2],
+	 ((unsigned char *) &DhcpIface.ciaddr)[3], IfNameExt);
   
   memset (&ifr, 0, sizeof (struct ifreq));
   memcpy (ifr.ifr_name, IfNameExt, IfNameExt_len);
@@ -292,53 +378,43 @@ int dhcpConfig()
   if (ioctl (dhcpSocket,SIOCADDRT,&rtent) && errno != EEXIST)
     logger (LOG_ERR, "dhcpConfig: ioctl SIOCADDRT: %s", strerror (errno));
 
-  /* Add our static routes */
-  for (i = 0; i < DhcpOptions.len[staticRoute]; i += 8)
+  memset (&network, 0, 5);
+  memset (&genmask, 0, 5);
+  memset (&gateway, 0, 5);
+  if (DhcpOptions.len[classlessStaticRoutes] > 0)
     {
-      struct sockaddr_in *dstp; 
-      struct sockaddr_in *gwp; 
-      struct sockaddr_in *mskp; 
-      memset (&rtent, 0, sizeof (struct rtentry));
-      dstp = (struct sockaddr_in *) &rtent.rt_dst;
-      dstp->sin_family = AF_INET;
-      memcpy (&dstp->sin_addr.s_addr,
-	      ((char *) DhcpOptions.val[staticRoute]) + i, 4);
-      
-      gwp = (struct sockaddr_in *) &rtent.rt_gateway;
-      gwp->sin_family = AF_INET;
-      memcpy (&gwp->sin_addr.s_addr, ((char *) DhcpOptions.val[staticRoute])
-	      + i + 4, 4);
-      mskp = (struct sockaddr_in *) &rtent.rt_genmask;
-      mskp->sin_family = AF_INET;
-      mskp->sin_addr.s_addr = getgenmask (dstp->sin_addr.s_addr);
-      rtent.rt_flags = RTF_UP | RTF_GATEWAY;
-      
-      if (mskp->sin_addr.s_addr == 0xffffffff)
-	rtent.rt_flags |= RTF_HOST;
-
-      rtent.rt_dev	      =	  IfNameExt;
-      rtent.rt_metric     =	  RouteMetric;
-      
-      if (ioctl (dhcpSocket, SIOCADDRT, &rtent) && errno != EEXIST)
-	logger (LOG_ERR, "dhcpConfig: ioctl SIOCADDRT: %s", strerror (errno));
+      for (i = 0; i < DhcpOptions.len[classlessStaticRoutes]; i += 12)
+	{
+	  memcpy (&network, DhcpOptions.val[classlessStaticRoutes] + i, 4);
+	  memcpy (&genmask, DhcpOptions.val[classlessStaticRoutes] + i + 4, 4);
+	  memcpy (&gateway, DhcpOptions.val[classlessStaticRoutes] + i + 8, 4);
+	  addRoute (network, gateway, genmask);
+	}
+    }
+  else
+    {
+      for (i = 0; i < DhcpOptions.len[staticRoute]; i += 8)
+	{
+	  memcpy (&network, DhcpOptions.val[staticRoute] + i, 4);
+	  memcpy (&gateway, DhcpOptions.val[staticRoute] + i + 4, 4);
+	  /* Work out the genmask */
+	  memcpy (&gn, DhcpOptions.val[staticRoute] + i, 4);
+	  gn = getgenmask(gn);
+	  addRoute (network, gateway, (char *) &gn);
+	}
     }
 
   if (SetDHCPDefaultRoutes)
     {
       if (DhcpOptions.len[routersOnSubnet] > 3)
 	for (i = 0; i <DhcpOptions.len[routersOnSubnet]; i += 4)
-	  setDefaultRoute (DhcpOptions.val[routersOnSubnet]);
+	  setDefaultRoute (DhcpOptions.val[routersOnSubnet] + i);
     }
   else
     if (default_router.s_addr > 0)
       setDefaultRoute ((char *) &(default_router.s_addr));
 
   arpInform ();
-  logger (LOG_INFO,"your IP address = %u.%u.%u.%u",
-	 ((unsigned char *) &DhcpIface.ciaddr)[0],
-	 ((unsigned char *) &DhcpIface.ciaddr)[1],
-	 ((unsigned char *) &DhcpIface.ciaddr)[2],
-	 ((unsigned char *) &DhcpIface.ciaddr)[3]);
   
   if (ReplResolvConf && (DhcpOptions.len[domainName] || DhcpOptions.len[dns]))
     {
@@ -584,8 +660,8 @@ tsc:
       int b, c;
       memcpy (&b, DhcpOptions.val[subnetMask], 4);
       c = DhcpIface.ciaddr & b;
-      fprintf (f, "IPADDR=%u.%u.%u.%u\nNETMASK=%u.%u.%u.%u\n"
-	      "NETWORK=%u.%u.%u.%u\nBROADCAST=%u.%u.%u.%u",
+      fprintf (f, "IPADDR=%u.%u.%u.%u\nNETMASK=\%u.%u.%u.%u\n"
+	      "NETWORK=%u.%u.%u.%u\nBROADCAST=\%u.%u.%u.%u",
 	      ((unsigned char *) &DhcpIface.ciaddr)[0],
 	      ((unsigned char *) &DhcpIface.ciaddr)[1],
 	      ((unsigned char *) &DhcpIface.ciaddr)[2],
@@ -602,6 +678,51 @@ tsc:
 	      ((unsigned char *) DhcpOptions.val[broadcastAddr])[1],
 	      ((unsigned char *) DhcpOptions.val[broadcastAddr])[2],
 	      ((unsigned char *) DhcpOptions.val[broadcastAddr])[3]);
+
+      if (DhcpOptions.len[classlessStaticRoutes])
+	{
+	  fprintf (f, "\nCLASSLESSROUTE=%u.%u.%u.%u,%u.%u.%u.%u,%u.%u.%u.%u",
+		  ((unsigned char *) DhcpOptions.val[classlessStaticRoutes])[0],
+		  ((unsigned char *) DhcpOptions.val[classlessStaticRoutes])[1],
+		  ((unsigned char *) DhcpOptions.val[classlessStaticRoutes])[2],
+		  ((unsigned char *) DhcpOptions.val[classlessStaticRoutes])[3],
+		  ((unsigned char *) DhcpOptions.val[classlessStaticRoutes])[4],
+		  ((unsigned char *) DhcpOptions.val[classlessStaticRoutes])[5],
+		  ((unsigned char *) DhcpOptions.val[classlessStaticRoutes])[6],
+		  ((unsigned char *) DhcpOptions.val[classlessStaticRoutes])[7],
+		  ((unsigned char *) DhcpOptions.val[classlessStaticRoutes])[8],
+		  ((unsigned char *) DhcpOptions.val[classlessStaticRoutes])[9],
+		  ((unsigned char *)
+		   DhcpOptions.val[classlessStaticRoutes])[10],
+		  ((unsigned char *)
+		   DhcpOptions.val[classlessStaticRoutes])[11]);
+	  for (i = 12;i < DhcpOptions.len[classlessStaticRoutes]; i += 12)
+	    fprintf (f, ",%u.%u.%u.%u,%u.%u.%u.%u,%u.%u.%u.%u",
+		    ((unsigned char *)
+		     DhcpOptions.val[classlessStaticRoutes])[i],
+		    ((unsigned char *)
+		     DhcpOptions.val[classlessStaticRoutes])[1 + i],
+		    ((unsigned char *)
+		     DhcpOptions.val[classlessStaticRoutes])[2 + i],
+		    ((unsigned char *)
+		     DhcpOptions.val[classlessStaticRoutes])[3 + i],
+		    ((unsigned char *)
+		     DhcpOptions.val[classlessStaticRoutes])[4 + i],
+		    ((unsigned char *)
+		     DhcpOptions.val[classlessStaticRoutes])[5 + i],
+		    ((unsigned char *)
+		     DhcpOptions.val[classlessStaticRoutes])[6 + i],
+		    ((unsigned char *)
+		     DhcpOptions.val[classlessStaticRoutes])[7 + i],
+		    ((unsigned char *)
+		     DhcpOptions.val[classlessStaticRoutes])[8 + i],
+		    ((unsigned char *)
+		     DhcpOptions.val[classlessStaticRoutes])[9 + i],
+		    ((unsigned char *)
+		     DhcpOptions.val[classlessStaticRoutes])[10 + i],
+		    ((unsigned char *)
+		     DhcpOptions.val[classlessStaticRoutes])[11 + i]);
+	}
       
       if (DhcpOptions.len[routersOnSubnet] > 3)
 	{
@@ -667,7 +788,7 @@ tsc:
 		((unsigned char *) DhcpOptions.val[dns])[3 + i]);
       
       if (DhcpOptions.len[dnsSearchPath])
-	fprintf (f, "\nDNSSEARCH=\'%s\'", cleanmetas ((char *)DhcpOptions.val[dnsSearchPath]));
+	fprintf (f, "\nDNSSEARCH='%s'", cleanmetas ((char *)DhcpOptions.val[dnsSearchPath]));
       
       if (DhcpOptions.len[ntpServers] >= 4)
 	{
@@ -704,12 +825,12 @@ tsc:
 	      "DHCPSIADDR=%u.%u.%u.%u\n"
 	      "DHCPCHADDR=%02X:%02X:%02X:%02X:%02X:%02X\n"
 	      "DHCPSHADDR=%02X:%02X:%02X:%02X:%02X:%02X\n"
-	      "DHCPSNAME=\'%s\'\n"
+	      "DHCPSNAME='%s'\n"
 	      "LEASETIME=%u\n"
 	      "RENEWALTIME=%u\n"
 	      "REBINDTIME=%u\n"
-	      "INTERFACE=\'%s\'\n"
-	      "CLASSID=\'%s\'\n",
+	      "INTERFACE='%s'\n"
+	      "CLASSID='%s'\n",
 	      ((unsigned char *) DhcpOptions.val[dhcpServerIdentifier])[0],
 	      ((unsigned char *) DhcpOptions.val[dhcpServerIdentifier])[1],
 	      ((unsigned char *) DhcpOptions.val[dhcpServerIdentifier])[2],
@@ -742,7 +863,7 @@ tsc:
 	      DhcpIface.class_id);
       
       if (ClientID)
-	fprintf(f, "CLIENTID=\'%s\'\n", ClientID);
+	fprintf(f, "CLIENTID='%s'\n", ClientID);
       else
 	fprintf(f, "CLIENTID=%02X:%02X:%02X:%02X:%02X:%02X\n",
 		DhcpIface.client_id[3], DhcpIface.client_id[4],
