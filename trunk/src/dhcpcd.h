@@ -38,7 +38,6 @@ extern	unsigned char	*ClassID;
 extern	int		ClassID_len;
 extern  unsigned char	*ClientID;
 extern  int		ClientID_len;
-extern	int		BeRFC1541;
 extern	unsigned	LeaseTime;
 extern	int		SetDomainName;
 extern	int		SetHostName;

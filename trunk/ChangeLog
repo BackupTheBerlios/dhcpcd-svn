@@ -2,6 +2,8 @@
 
    Added Classless Static Route support, RFC 3442.
 
+   Dropped support for obsolete RFC 1541.
+
 24 Jul 2006; Roy Marples <uberlord@gentoo.org>
 
    Re-wrote buildmsg.c so that we only have 1 code block to actually make

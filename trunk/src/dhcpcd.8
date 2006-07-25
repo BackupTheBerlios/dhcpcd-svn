@@ -9,7 +9,7 @@ dhcpcd \- DHCP client daemon
 .in +.5i
 .ti -.5i
 dhcpcd
-\%[\-aknoprBCDHNRSTY]
+\%[\-aknopBDHNRSTY]
 \%[\-t\ <timeout>]
 \%[\-c\ <ExecFilePath>]
 \%[\-h\ <hostname>]
@@ -30,9 +30,7 @@ dhcpcd
 .B dhcpcd
 is an implementation of the DHCP client specified in
 .B RFC2131
-(when -r option is not specified) and
-.B RFC1541
-(when -r option is specified).  Support for
+. Support for
 .B draft-ietf-dhc-fqdn-option
 in use in many systems (particularly networks using Microsoft DHCP
 servers) is also provided.
@@ -42,9 +40,7 @@ etc.) from a DHCP server and configures the network interface of the
 machine on which it is running. It also tries to renew the lease time
 according to
 .B RFC2131
-or
-.B RFC1541
-(obsolete).
+.
 
 
 .SH OPTIONS
@@ -126,11 +122,6 @@ lease period when the lease is not renewed.
 Unlike the 
 .B \-o
 option, the address remains on the interface.
-.TP
-.BI \-r
-Makes dhcpcd RFC1541 (obsolete) compliant.
-.B dhcpcd
-is RFC2131 compliant unless this option is specified.
 .TP
 .BI \-B
 Requests broadcast response from DHCP server.
@@ -471,7 +462,7 @@ is attached.
 .BR nsupdate (8)
 .LP
 .I Dynamic Host Configuration Protocol,
-RFC2131 and RFC1541 (obsolete)
+RFC2132
 .LP
 .I DHCP Options and BOOTP Vendor Extensions,
 RFC2132

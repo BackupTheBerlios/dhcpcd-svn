@@ -56,7 +56,6 @@ int		ClassID_len	=	0;
 unsigned char	*ClientID	=	NULL;
 int		ClientID_len	=	0;
 void		*(*currState)()	=	&dhcpReboot;
-int		BeRFC1541	=	0;
 unsigned	LeaseTime	=	DEFAULT_LEASETIME;
 int		ReplResolvConf	=	1;
 int		ReplNISConf	=	1;
@@ -154,7 +153,7 @@ int main(int argc, char **argv)
     }
 
   while ((c = getopt (argc, argv,
-		      "adknoprBDHNRSTYl:h:t:i:I:c:s::w:L:G::e:m:F:v:")) != -1)
+		      "adknopBDHNRSTYl:h:t:i:I:c:s::w:L:G::e:m:F:v:")) != -1)
     switch (c)
       {
       case 'a':
@@ -184,10 +183,6 @@ int main(int argc, char **argv)
 
       case 'd':
 	LogLevel = log_to_level("LOG_DEBUG");
-	break;
-
-      case 'r':
-	BeRFC1541 = 1;
 	break;
 
       case 'D':

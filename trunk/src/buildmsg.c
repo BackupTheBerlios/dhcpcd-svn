@@ -67,15 +67,10 @@ static void buildDhcpMessage (unsigned xid, u_char op)
 
   if (DhcpIface.ciaddr)
     {
-      if (BeRFC1541)
-	DhcpMsgSend->ciaddr = DhcpIface.ciaddr;
-      else
-	{
-	  *p++ = dhcpRequestedIPaddr;
-	  *p++ = 4;
-	  memcpy (p,&DhcpIface.ciaddr,4);
-	  p += 4; 
-	}
+      *p++ = dhcpRequestedIPaddr;
+      *p++ = 4;
+      memcpy (p, &DhcpIface.ciaddr, 4);
+      p += 4; 
     }
 
   *p++ = dhcpIPaddrLeaseTime;
@@ -225,15 +220,10 @@ void buildDhcpDecline(unsigned xid)
   *p++ = 4;
   memcpy (p, DhcpOptions.val[dhcpServerIdentifier], 4);
   p += 4;
-  if (BeRFC1541)
-    DhcpMsgSend->ciaddr = DhcpIface.ciaddr;
-  else
-    {
-      *p++ = dhcpRequestedIPaddr;
-      *p++ = 4;
-      memcpy (p, &DhcpIface.ciaddr, 4);
-      p += 4;
-    }
+  *p++ = dhcpRequestedIPaddr;
+  *p++ = 4;
+  memcpy (p, &DhcpIface.ciaddr, 4);
+  p += 4;
   memcpy (p, DhcpIface.client_id, DhcpIface.client_len);
   p += DhcpIface.client_len;
   *p = endOption;
