@@ -76,7 +76,7 @@ int		Window		=	0;
 char		*ConfigDir	=	CONFIG_DIR;
 int		SetDHCPDefaultRoutes=	1;
 int		Persistent	=	0;
-int		DownIfaceOnStop	=	1;
+int		DownIfaceOnStop	=	0;
 int		DoARP		=	1;
 
 #if 0
@@ -466,6 +466,8 @@ usage:	    print_version();
 
   magic_cookie = htonl(MAGIC_COOKIE);
   dhcpMsgSize = htons(sizeof(dhcpMessage)+sizeof(udpiphdr));
+  printf("%d\n", dhcpMsgSize);
+  exit(1);
   nleaseTime = htonl(LeaseTime);
   if (TimeOut != 0)
     alarm(TimeOut);

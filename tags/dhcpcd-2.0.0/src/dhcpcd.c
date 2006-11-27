@@ -75,7 +75,7 @@ int		Window		=	0;
 char		*ConfigDir	=	CONFIG_DIR;
 int		SetDHCPDefaultRoutes=	1;
 int		Persistent	=	0;
-int		DownIfaceOnStop	=	1;
+int		DownIfaceOnStop	=	0;
 
 #if 0
 unsigned char	ClientMACaddr[ETH_ALEN];
