@@ -38,6 +38,7 @@
 #include "logger.h"
 #include "socket.h"
 
+#define DHCP_PACKET_LENTH_MIN 300
 #define BROADCAST_FLAG 0x8000
 
 static const char *dhcp_message[] = {
@@ -266,6 +267,11 @@ size_t send_message (const interface_t *iface, const dhcp_t *dhcp,
 
   *p++ = DHCP_END;
 
+#ifdef DHCP_PACKET_LENTH_MIN
+  while (p - m < DHCP_PACKET_LENTH_MIN)
+	  *p++ = 0;
+#endif
+  
   message_length = p - m;
 
   memset (&packet, 0, sizeof (struct udp_dhcp_packet));
