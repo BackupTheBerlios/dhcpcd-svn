@@ -1,5 +1,6 @@
+Fix adding of routes on the BSDs.
 ROOTPATH should work correctly again, thanks to danhien.
-Compiles ok on NetBSD, but doesn't add routes yet - thanks to Gabor Z. Papp.
+Compiles ok on NetBSD thanks to Gabor Z. Papp.
 If the current hostname contains dots then send it as a FQDN.
 Ensure that static routes are always added before routers.
 Use getnameinfo instead of gethostbyaddr.
