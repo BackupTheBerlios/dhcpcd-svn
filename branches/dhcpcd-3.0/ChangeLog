@@ -1,3 +1,4 @@
+Fix ClientID's - doh.
 Fix adding of routes on the BSDs.
 ROOTPATH should work correctly again, thanks to danhien.
 Compiles ok on NetBSD thanks to Gabor Z. Papp.

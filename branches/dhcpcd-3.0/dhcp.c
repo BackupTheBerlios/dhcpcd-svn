@@ -237,12 +237,12 @@ size_t send_message (const interface_t *iface, const dhcp_t *dhcp,
 		l = strlen (options->clientid);
 		*p++ = l + 1;
 		*p++ = 0; /* string */
-		memcpy (p, options, l);
+		memcpy (p, options->clientid, l);
 		p += l;
 	} else {
 		*p++ = iface->hwlen + 1;
 		*p++ = iface->family;
-		memcpy (p, &iface->hwaddr, iface->hwlen);
+		memcpy (p, iface->hwaddr, iface->hwlen);
 		p += iface->hwlen;
 	}
 
