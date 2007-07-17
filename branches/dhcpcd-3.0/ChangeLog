@@ -1,3 +1,5 @@
+Suport DHCP option (52) overload.
+
 dhcpcd-3.0.19
 Put the padding after the end option so we work with old style BOOTP servers
 again.
