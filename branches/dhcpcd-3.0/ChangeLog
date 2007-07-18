@@ -1,3 +1,4 @@
+Allow aliased interfaces to work.
 Suport DHCP option (52) overload.
 
 dhcpcd-3.0.19

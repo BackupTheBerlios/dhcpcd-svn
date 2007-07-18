@@ -186,9 +186,9 @@ int main(int argc, char **argv)
 				}
 				break;
 			case 'h':
-				if (strlen (optarg) > sizeof (options.hostname)) {
+				if (strlen (optarg) > MAXHOSTNAMELEN) {
 					logger (LOG_ERR, "`%s' too long for HostName string, max is %d",
-							optarg, sizeof (options.hostname));
+							optarg, MAXHOSTNAMELEN);
 					exit (EXIT_FAILURE);
 				} else
 					strlcpy (options.hostname, optarg, sizeof (options.hostname));
