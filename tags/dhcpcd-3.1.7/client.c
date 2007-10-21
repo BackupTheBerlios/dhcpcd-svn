@@ -22,7 +22,6 @@
 
 #ifdef __linux__
 # define _BSD_SOURCE
-# define _XOPEN_SOURCE 500 /* needed for pwrite */
 #endif
 
 #include <sys/types.h>
@@ -109,7 +108,10 @@
 #define SEND_MESSAGE(_type) { \
 	last_type = _type; \
 	last_send = uptime (); \
-	send_message (iface, dhcp, xid, _type, options); \
+	if (send_message (iface, dhcp, xid, _type, options) == (size_t) -1) { \
+		retval = -1; \
+		goto eexit; \
+	} \
 }
 
 #define DROP_CONFIG { \
@@ -122,7 +124,6 @@
 static pid_t daemonise (int *pidfd)
 {
 	pid_t pid;
-	char spid[16];
 
 #ifndef THERE_IS_NO_FORK
 	logger (LOG_DEBUG, "forking to background");
@@ -163,14 +164,11 @@ static pid_t daemonise (int *pidfd)
 	free (argv);
 #endif
 
+	/* Done with the fd now */
 	if (pid != 0) {
-		if (ftruncate (*pidfd, 0) == -1) {
-			logger (LOG_ERR, "ftruncate: %s", strerror (errno));
-		} else {
-			snprintf (spid, sizeof (spid), "%u", pid);
-			if (pwrite (*pidfd, spid, strlen (spid), 0) != (ssize_t) strlen (spid))
-				logger (LOG_ERR, "pwrite: %s", strerror (errno));
-		}
+		writepid (*pidfd, pid);
+		close (*pidfd);
+		*pidfd = -1;
 	}
 
 	return (pid);
@@ -286,6 +284,11 @@ int dhcp_run (const options_t *options, int *pidfd)
 			return (-1);
 		}
 
+		if (! options->daemonised && IN_LINKLOCAL (dhcp->address.s_addr)) {
+			logger (LOG_ERR, "cannot request a link local address");
+			return (-1);
+		}
+
 #ifdef THERE_IS_NO_FORK
 		if (options->daemonised) {
 			state = STATE_BOUND;
@@ -353,9 +356,9 @@ int dhcp_run (const options_t *options, int *pidfd)
 	   interface. We only do this on start, so persistent addresses can be added
 	   afterwards by the user if needed. */
 	if (! options->test && ! options->daemonised) {
-		if (! options->doinform)
+		if (! options->doinform) {
 			flush_addresses (iface->name);
-		else {
+		} else {
 			/* The inform address HAS to be configured for it to work with most
 			 * DHCP servers */
 			if (options->doinform && has_address (iface->name, dhcp->address) < 1) {
@@ -429,16 +432,17 @@ int dhcp_run (const options_t *options, int *pidfd)
 			retval = 0;
 
 		/* We should always handle our signals first */
-		if (retval > 0 && (sig = signal_read (&rset))) {
+		if ((sig = (signal_read (NULL))) != -1)
+		{
 			switch (sig) {
 				case SIGINT:
 					logger (LOG_INFO, "received SIGINT, stopping");
-					retval = (! daemonised);
+					retval = daemonised ? EXIT_SUCCESS : EXIT_FAILURE;
 					goto eexit;
 
 				case SIGTERM:
 					logger (LOG_INFO, "received SIGTERM, stopping");
-					retval = (! daemonised);
+					retval = daemonised ? EXIT_SUCCESS : EXIT_FAILURE;
 					goto eexit;
 
 				case SIGALRM:
@@ -476,7 +480,7 @@ int dhcp_run (const options_t *options, int *pidfd)
 					else
 						logger (LOG_ERR,
 								"received SIGHUP, but we no have lease to release");
-					retval = 0;
+					retval = daemonised ? EXIT_SUCCESS : EXIT_FAILURE;
 					goto eexit;
 
 				default:
@@ -488,37 +492,38 @@ int dhcp_run (const options_t *options, int *pidfd)
 			/* timed out */
 			switch (state) {
 				case STATE_INIT:
-					if (iface->previous_address.s_addr != 0 &&
-						! IN_LINKLOCAL (iface->previous_address.s_addr) &&
-						! options->doinform) {
-						logger (LOG_ERR, "lost lease");
-						xid = 0;
+					if (xid != 0) {
+						if (iface->previous_address.s_addr != 0 &&
+							! IN_LINKLOCAL (iface->previous_address.s_addr) &&
+							! options->doinform)
+						{
+							logger (LOG_ERR, "lost lease");
+							if (! options->persistent)
+								DROP_CONFIG;
+						} else
+							logger (LOG_ERR, "timed out");
+						
 						SOCKET_MODE (SOCKET_CLOSED);
-						if (! options->persistent)
-							DROP_CONFIG;
-					}
-
-					if (xid == 0)
-						xid = random ();
-					else {
-						SOCKET_MODE (SOCKET_CLOSED);
-						logger (LOG_ERR, "timed out");
-
 						free_dhcp (dhcp);
 						memset (dhcp, 0, sizeof (dhcp_t));
+					
 #ifdef ENABLE_INFO
 						if (! options->test &&
 							(options->doipv4ll || options->dolastlease))
 						{
+							errno = 0;
 							if (! get_old_lease (options, iface, dhcp, &timeout))
 							{
+								if (errno == EINTR)
+									break;
 								if (options->dolastlease) {
 									retval = EXIT_FAILURE;
 									goto eexit;
 								}
 								free_dhcp (dhcp);
 								memset (dhcp, 0, sizeof (dhcp_t));
-							}
+							} else if (errno == EINTR)
+								break;
 						}
 #endif
 
@@ -531,8 +536,9 @@ int dhcp_run (const options_t *options, int *pidfd)
 							logger (LOG_INFO, "probing for an IPV4LL address");
 							free_dhcp (dhcp);
 							memset (dhcp, 0, sizeof (dhcp_t));
-							if (ipv4ll_get_address (iface, dhcp) == -1)
+							if (ipv4ll_get_address (iface, dhcp) == -1) {
 								break;
+							}
 							timeout = dhcp->renewaltime;
 						}
 #endif
@@ -575,6 +581,7 @@ int dhcp_run (const options_t *options, int *pidfd)
 						}
 					}
 
+					xid = random ();
 					SOCKET_MODE (SOCKET_OPEN);
 					timeout = options->timeout;
 					iface->start_uptime = uptime ();
@@ -624,19 +631,9 @@ int dhcp_run (const options_t *options, int *pidfd)
 					state = STATE_REQUESTING;
 					break;
 				case STATE_REQUESTING:
-					if (iface->previous_address.s_addr != 0 && ! options->doinform)
-						logger (LOG_ERR, "lost lease");
-					else
-						logger (LOG_ERR, "timed out");
-					if (! daemonised && options->daemonise)
-						goto eexit;
-
 					state = STATE_INIT;
 					SOCKET_MODE (SOCKET_CLOSED);
 					timeout = 0;
-					xid = 0;
-					if (! options->doinform)
-						DROP_CONFIG;
 					break;
 
 				case STATE_RELEASED:
@@ -750,6 +747,7 @@ int dhcp_run (const options_t *options, int *pidfd)
 						if (options->doarp && iface->previous_address.s_addr !=
 							dhcp->address.s_addr)
 						{
+							errno = 0;
 							if (arp_claim (iface, dhcp->address)) {
 								SOCKET_MODE (SOCKET_OPEN);
 								SEND_MESSAGE (DHCP_DECLINE);
@@ -768,7 +766,8 @@ int dhcp_run (const options_t *options, int *pidfd)
 								tv.tv_usec = 0;
 								select (0, NULL, NULL, NULL, &tv);
 								continue;
-							}
+							} else if (errno == EINTR)
+								break;
 						}
 #endif
 
@@ -892,14 +891,7 @@ eexit:
 		free_route (iface->previous_routes);
 		free (iface);
 	}
-
-	if (buffer)
-		free (buffer);
-
-	if (*pidfd != -1) {
-		close (*pidfd);
-		*pidfd = -1;
-	}
+	free (buffer);
 
 	if (daemonised)
 		unlink (options->pidfile);

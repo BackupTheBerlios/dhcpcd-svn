@@ -17,15 +17,15 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef IPV4LL_H
-#define IPV4LL_H
+#ifndef ARP_H
+#define ARP_H
 
-#ifdef ENABLE_IPV4LL
+#ifdef ENABLE_ARP
+#include <netinet/in.h>
 
-#include "dhcp.h"
 #include "interface.h"
 
-int ipv4ll_get_address (interface_t *iface, dhcp_t *dhcp);
-
+int arp_claim (interface_t *iface, struct in_addr address);
 #endif
+
 #endif

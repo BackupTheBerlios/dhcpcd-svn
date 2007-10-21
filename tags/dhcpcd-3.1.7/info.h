@@ -1,6 +1,8 @@
 /*
  * dhcpcd - DHCP client daemon -
- * Copyright 2005 - 2007 Roy Marples <uberlord@gentoo.org>
+ * Copyright 2006-2007 Roy Marples <uberlord@gentoo.org>
+ * 
+ * dhcpcd is an RFC2131 compliant DHCP client daemon.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
@@ -17,15 +19,18 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef IPV4LL_H
-#define IPV4LL_H
+#ifndef INFO_H
+#define INFO_H
 
-#ifdef ENABLE_IPV4LL
-
-#include "dhcp.h"
+#include "dhcpcd.h"
 #include "interface.h"
+#include "dhcp.h"
 
-int ipv4ll_get_address (interface_t *iface, dhcp_t *dhcp);
+#ifdef ENABLE_INFO
+bool write_info (const interface_t *iface, const dhcp_t *dhcp,
+				 const options_t *options, bool overwrite);
 
+bool read_info (const interface_t *iface, dhcp_t *dhcp);
 #endif
+
 #endif
